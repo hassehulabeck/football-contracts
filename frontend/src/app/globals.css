@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-pitch text-orange-50 font-body;
+  }
+
+  h1, h2, h3 {
+    @apply font-display font-black tracking-tight;
+  }
+
+  /* Tabular figures for numbers — prevents layout jitter in leaderboards */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+    @apply font-mono;
+  }
+}

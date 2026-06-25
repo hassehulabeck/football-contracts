@@ -1,0 +1,10 @@
+[build]
+builder = "nixpacks"
+# Generate Prisma client at build time so the compiled JS can import it
+buildCommand = "npm ci && npx prisma generate && npm run build"
+
+[deploy]
+# Run pending migrations before starting — safe to re-run on every deploy
+startCommand = "npx prisma migrate deploy && npm start"
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 10

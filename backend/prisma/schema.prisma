@@ -1,0 +1,131 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum League {
+  ALLSVENSKAN
+  DAMALLSVENSKAN
+  SUPERETTAN
+  ELITETTAN
+}
+
+enum ContractPattern {
+  WWW
+  DDD
+  LLL
+  WDL
+  LDW
+}
+
+// PENDING  → contract exists, auction not yet started
+// ACTIVE   → auction is open (within 48h window)
+// CLOSED   → auction ended, coupons distributed to winners
+// FULFILLED → team completed the pattern, coupon holders paid
+// FAILED   → contract window expired without pattern being met
+enum ContractStatus {
+  PENDING
+  ACTIVE
+  CLOSED
+  FULFILLED
+  FAILED
+}
+
+// ─── Models ──────────────────────────────────────────────────────────────────
+
+model User {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  passwordHash    String
+  emailVerified   Boolean   @default(false)
+  activationToken String?   @unique
+  credits         Int       @default(1000)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  bids    Bid[]
+  coupons Coupon[]
+}
+
+model Team {
+  id         String   @id @default(cuid())
+  externalId Int      @unique // api-football.com team ID
+  name       String
+  league     League
+
+  contracts Contract[]
+  matches   Match[]
+}
+
+model Contract {
+  id           String          @id @default(cuid())
+  teamId       String
+  pattern      ContractPattern
+  status       ContractStatus  @default(PENDING)
+  couponCount  Int             // snapshotted at creation time
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  team    Team     @relation(fields: [teamId], references: [id])
+  coupons Coupon[]
+  auction Auction?
+}
+
+model Coupon {
+  id         String   @id @default(cuid())
+  contractId String
+  ownerId    String?  // null until auction closes and winners are determined
+  paidOut    Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  contract Contract @relation(fields: [contractId], references: [id])
+  owner    User?    @relation(fields: [ownerId], references: [id])
+}
+
+model Auction {
+  id         String   @id @default(cuid())
+  contractId String   @unique
+  endsAt     DateTime
+  closed     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  contract Contract @relation(fields: [contractId], references: [id])
+  bids     Bid[]
+}
+
+model Bid {
+  id        String   @id @default(cuid())
+  auctionId String
+  userId    String
+  amount    Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  auction Auction @relation(fields: [auctionId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
+
+  // one bid per user per auction; upsert replaces rather than stacks
+  @@unique([auctionId, userId])
+}
+
+// Stores individual match results from api-football.com, per tracked team.
+// result is W/D/L from that team's perspective (pre-computed on ingest).
+model Match {
+  id         String   @id @default(cuid())
+  externalId Int      @unique // api-football.com fixture ID
+  teamId     String
+  result     String   // "W", "D", or "L"
+  homeScore  Int
+  awayScore  Int
+  isHome     Boolean
+  playedAt   DateTime
+  createdAt  DateTime @default(now())
+
+  team Team @relation(fields: [teamId], references: [id])
+}
