@@ -1,7 +1,6 @@
 import cron from 'node-cron';
 import { createWeeklyContracts } from './createContracts';
 import { closeExpiredAuctions } from './closeAuctions';
-import { checkContractFulfillment } from './checkFulfillment';
 
 export function registerJobs() {
   // Every Wednesday at 03:00 CET (02:00 UTC)
@@ -10,8 +9,13 @@ export function registerJobs() {
   // Every 15 minutes — close any auctions that have passed their end time
   cron.schedule('*/15 * * * *', closeExpiredAuctions);
 
-  // Every hour — fetch new match results and evaluate contract fulfillment
-  cron.schedule('0 * * * *', checkContractFulfillment);
+  // NOTE: checkContractFulfillment is intentionally NOT scheduled.
+  // It ran hourly and called the football API once per team — with 60 teams
+  // that is ~1440 requests/day, almost all of them returning nothing new.
+  //
+  // Until it is rescheduled, no match results are ingested, no contract ever
+  // reaches FULFILLED or FAILED, and no coupon is ever paid out. The job itself
+  // still works: import checkContractFulfillment from './checkFulfillment'.
 
   console.log('Scheduled jobs registered');
 }
