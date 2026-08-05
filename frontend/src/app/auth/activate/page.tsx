@@ -1,13 +1,29 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 
 type Status = 'loading' | 'success' | 'error';
 
+// useSearchParams() opts the subtree out of prerendering, so it has to sit
+// inside a Suspense boundary or `next build` fails on this route.
 export default function ActivatePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex flex-col items-center justify-center flex-1 px-4 py-20">
+          <p className="text-orange-200">Activating your account…</p>
+        </div>
+      }
+    >
+      <ActivateContent />
+    </Suspense>
+  );
+}
+
+function ActivateContent() {
   const params = useSearchParams();
   const [status, setStatus] = useState<Status>('loading');
   const [message, setMessage] = useState('');

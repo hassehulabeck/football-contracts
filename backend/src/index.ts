@@ -24,6 +24,9 @@ async function start() {
 
   await server.register(prismaPlugin);
 
+  // Railway polls this to decide when the container is live and ready for traffic.
+  server.get('/health', async () => ({ status: 'ok' }));
+
   await server.register(authRoutes, { prefix: '/api/auth' });
   await server.register(contractRoutes, { prefix: '/api/contracts' });
   await server.register(auctionRoutes, { prefix: '/api/auctions' });

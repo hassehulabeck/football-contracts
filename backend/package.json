@@ -10,7 +10,8 @@
     "db:migrate": "prisma migrate dev",
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
-    "sync:teams": "ts-node --transpile-only src/scripts/syncTeams.ts"
+    "sync:teams": "ts-node --transpile-only src/scripts/syncTeams.ts",
+    "sync:teams:prod": "node dist/scripts/syncTeams.js"
   },
   "prisma": {
     "seed": "ts-node --transpile-only prisma/seed.ts"
