@@ -2,7 +2,9 @@
 builder = "nixpacks"
 # NEXT_PUBLIC_API_URL must be set as a Railway env var before this build runs —
 # Next.js bakes it into the client bundle at build time, not at runtime.
-buildCommand = "npm ci && npm run build"
+# No `npm ci` here — nixpacks already installs before running this command, and
+# a second install fails with EBUSY against the mounted node_modules cache.
+buildCommand = "npm run build"
 
 [deploy]
 startCommand = "npm start"
