@@ -4,8 +4,10 @@ import { closeExpiredAuctions } from './closeAuctions';
 import { checkContractFulfillment } from './checkFulfillment';
 
 export function registerJobs() {
-  // Every Wednesday at 03:00 CET (02:00 UTC)
-  cron.schedule('0 2 * * 3', createWeeklyContracts, { timezone: 'UTC' });
+  // Every Wednesday at 03:00 CET (02:00 UTC).
+  // Wrapped, not passed by reference: node-cron hands the callback the fire
+  // time, which would otherwise arrive as the job's options argument.
+  cron.schedule('0 2 * * 3', () => createWeeklyContracts(), { timezone: 'UTC' });
 
   // Every 15 minutes — close any auctions that have passed their end time
   cron.schedule('*/15 * * * *', closeExpiredAuctions);

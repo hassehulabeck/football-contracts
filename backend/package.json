@@ -16,7 +16,9 @@
     "sync:teams": "ts-node --transpile-only src/scripts/syncTeams.ts",
     "sync:teams:prod": "node dist/scripts/syncTeams.js",
     "ingest:matches": "ts-node --transpile-only src/scripts/ingestMatches.ts",
-    "ingest:matches:prod": "node dist/scripts/ingestMatches.js"
+    "ingest:matches:prod": "node dist/scripts/ingestMatches.js",
+    "create:contracts": "ts-node --transpile-only src/scripts/createContracts.ts",
+    "create:contracts:prod": "node dist/scripts/createContracts.js"
   },
   "prisma": {
     "seed": "ts-node --transpile-only prisma/seed.ts"

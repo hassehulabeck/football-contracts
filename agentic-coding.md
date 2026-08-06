@@ -487,12 +487,18 @@ credits at bid time — would mean a user's balance no longer reflects what they
 and would need releasing on every outbid. Settling at close and passing over anyone
 who cannot pay keeps one ledger and makes the auction self-consistent.
 
-### Verified end to end
+### Verified end to end — but against the wrong database
 
-Against the live database and real ingested results, through the actual job
-functions: 60 teams, **852 match rows** (426 fixtures × 2 sides), 0 rows whose
-result contradicts its score line, all 60 teams covered — up from 390 rows,
-48 wrong, 23 teams covered.
+> **Correction, same day.** Everything in this section ran against the database
+> reachable through `reseau.proxy.rlwy.net:11041`, which is what `backend/.env`
+> has always pointed at. That is **not** the database the deployed backend uses
+> (`postgres.railway.internal:5432`) — different credentials, different data. See
+> "Two databases" below. The code changes and the bug diagnoses stand; the data
+> verification below describes a database production does not read.
+
+Against real ingested results, through the actual job functions: 60 teams,
+**852 match rows** (426 fixtures × 2 sides), 0 rows whose result contradicts its
+score line, all 60 teams covered — up from 390 rows, 48 wrong, 23 teams covered.
 
 A tagged fixture set then drove the full loop and was deleted afterwards:
 auction close assigns coupons and debits the exact bid; a bidder who cannot cover
@@ -501,11 +507,47 @@ contract on Hammarby's real 2026-05-03 WWW run reaches FULFILLED and pays its tw
 holders 100 each; a contract with no matches in its window stays CLOSED rather than
 FAILED; and a second fulfilment run pays nobody twice. 15/15 checks passed.
 
+### Two databases
+
+Everything above was run through `backend/.env`, whose `DATABASE_URL` pointed at
+`reseau.proxy.rlwy.net:11041`. The deployed backend uses
+`postgres.railway.internal:5432`. Different passwords, different data, both named
+`railway`, both carrying our schema, our 60 teams and an account with the same
+email address. Nothing distinguished them from the client side.
+
+The orphan is the **original Phase 1 database** — its Postgres has been up since
+`2026-06-24 15:08:28`, ninety seconds before the init migration, and it holds the
+account created `2026-06-25T06:17`. So Phase 8's conclusion that the first database
+was on an unreachable account and had to be abandoned was wrong: it was reachable
+the whole time, and it is what this machine had been talking to ever since.
+
+What actually gave it away was creating 25 contracts and seeing `GET /api/contracts`
+still return an empty list.
+
+**Why the earlier checks did not catch it.** Phase 8 signed off on `/health`,
+`/api/contracts` and `/api/leaderboard` returning 200. All three return 200 against
+an empty database. A status code proves the service is up and can reach *a*
+database; it says nothing about *which*. Phase 9 then went one better and still
+missed it — the end-to-end run asserted on 15 values it had itself just written, so
+it was self-consistent inside the wrong database.
+
+The check that would have caught either: assert a number the deployment is supposed
+to already have. `GET /api/contracts` returning 25 after creating 25, or a team
+count read back through the public API rather than through the same connection that
+wrote it.
+
+**Resolution.** Production keeps its own Postgres and was populated directly on the
+service (`railway ssh --service football-coupons-backend "npm run ingest:matches:prod"`).
+The proxy line in `backend/.env` is commented out with a warning rather than
+deleted, and `.env.example` now says to point local runs at a local Postgres only.
+The orphaned instance was left running but unused — the user confirmed neither
+database held anything worth keeping.
+
 ### Still open
 
-Contract *generation* has still never run — the first natural batch is Wednesday
-2026-08-12, 02:00 UTC. The loop is verified against contracts created by hand, so
-`createWeeklyContracts` is the one link not yet exercised in production.
+The first *cron-driven* batch is Wednesday 2026-08-12, 02:00 UTC.
+`createWeeklyContracts` has now been run by hand in production via
+`npm run create:contracts:prod`, but the scheduled path itself is still unproven.
 
 ---
 

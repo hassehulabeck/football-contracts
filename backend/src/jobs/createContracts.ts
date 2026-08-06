@@ -3,25 +3,46 @@ import { PrismaClient, ContractPattern } from '@prisma/client';
 const prisma = new PrismaClient();
 const PATTERNS: ContractPattern[] = ['WWW', 'DDD', 'LLL', 'WDL', 'LDW'];
 const CONTRACTS_PER_BATCH = 25;
+const AUCTION_HOURS = 48;
 
-export async function createWeeklyContracts() {
-  console.log('[createContracts] Starting weekly contract generation');
+export type CreateContractsOptions = {
+  count?: number;
+  /** Auction duration in hours. Shorten it to watch a full cycle on demand. */
+  auctionHours?: number;
+  dryRun?: boolean;
+  log?: (msg: string) => void;
+};
+
+export async function createWeeklyContracts(opts: CreateContractsOptions = {}) {
+  const count = opts.count ?? CONTRACTS_PER_BATCH;
+  const auctionHours = opts.auctionHours ?? AUCTION_HOURS;
+  const dryRun = opts.dryRun ?? false;
+  const log = opts.log ?? ((msg: string) => console.log(`[createContracts] ${msg}`));
+
+  log('Starting contract generation');
 
   const teams = await prisma.team.findMany();
   if (teams.length === 0) {
-    console.warn('[createContracts] No teams in database — skipping');
-    return;
+    log('No teams in database — skipping');
+    return { created: 0, couponCount: 0, auctionEnd: null as Date | null };
   }
 
+  // Coupon supply tracks the player base: 10% of verified users once past 50.
   const userCount = await prisma.user.count({ where: { emailVerified: true } });
   const couponCount = userCount > 50 ? Math.floor(userCount * 0.1) : 5;
 
-  const auctionEnd = new Date();
-  auctionEnd.setHours(auctionEnd.getHours() + 48);
+  const auctionEnd = new Date(Date.now() + auctionHours * 60 * 60 * 1000);
 
-  for (let i = 0; i < CONTRACTS_PER_BATCH; i++) {
+  let created = 0;
+  for (let i = 0; i < count; i++) {
     const team = teams[Math.floor(Math.random() * teams.length)];
     const pattern = PATTERNS[Math.floor(Math.random() * PATTERNS.length)];
+
+    if (dryRun) {
+      log(`[DRY] would create ${team.name} (${pattern})`);
+      created++;
+      continue;
+    }
 
     const contract = await prisma.contract.create({
       data: {
@@ -29,17 +50,19 @@ export async function createWeeklyContracts() {
         pattern,
         status: 'ACTIVE',
         couponCount,
-        coupons: {
-          create: Array.from({ length: couponCount }, () => ({})),
-        },
-        auction: {
-          create: { endsAt: auctionEnd },
-        },
+        coupons: { create: Array.from({ length: couponCount }, () => ({})) },
+        auction: { create: { endsAt: auctionEnd } },
       },
     });
+    created++;
 
-    console.log(`[createContracts] Created contract ${contract.id} for ${team.name} (${pattern})`);
+    log(`Created contract ${contract.id} for ${team.name} (${pattern})`);
   }
 
-  console.log(`[createContracts] Done — ${CONTRACTS_PER_BATCH} contracts created`);
+  log(
+    `Done — ${created} contracts, ${couponCount} coupons each, ` +
+      `auction ends ${auctionEnd.toISOString()}`,
+  );
+
+  return { created, couponCount, auctionEnd };
 }
