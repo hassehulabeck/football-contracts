@@ -26,6 +26,9 @@ export function Navbar() {
         <Link href="/leaderboard" className="text-sm text-white/50 hover:text-orange-200 transition-colors">
           Leaderboard
         </Link>
+        <Link href="/rules" className="text-sm text-white/50 hover:text-orange-200 transition-colors">
+          Rules
+        </Link>
       </div>
 
       {!loading && (

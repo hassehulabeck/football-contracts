@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import { LeagueBadge } from '@/components/LeagueBadge';
 import type { Contract, AuctionDetail } from '@/types/api';
 
 const PATTERN_DESCRIPTION: Record<string, string> = {
@@ -21,13 +22,6 @@ const STATUS_LABEL: Record<string, string> = {
   CLOSED: 'Auction closed — awaiting results',
   FULFILLED: 'Fulfilled',
   FAILED: 'Failed',
-};
-
-const LEAGUE_LABEL: Record<string, string> = {
-  ALLSVENSKAN: 'Allsvenskan',
-  DAMALLSVENSKAN: 'Damallsvenskan',
-  SUPERETTAN: 'Superettan',
-  ELITETTAN: 'Elitettan',
 };
 
 function formatDate(dt: string) {
@@ -134,9 +128,9 @@ export default function ContractDetailPage() {
         ← Contracts
       </Link>
 
-      <p className="text-white/40 text-xs uppercase tracking-widest mb-1">
-        {LEAGUE_LABEL[contract.team.league]}
-      </p>
+      <div className="mb-3">
+        <LeagueBadge league={contract.team.league} />
+      </div>
       <h1 className="text-4xl font-black text-brand-500 mb-1">{contract.team.name}</h1>
       <p className="text-orange-200 text-xl mb-8">{PATTERN_DESCRIPTION[contract.pattern]}</p>
 

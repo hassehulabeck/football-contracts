@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { LEAGUES } from '@/lib/leagues';
 
 const HOW_IT_WORKS = [
   {
@@ -38,7 +39,11 @@ export default function Home() {
           Football<br />Contracts
         </h1>
         <p className="text-orange-200 text-xl mb-10 max-w-xl mx-auto leading-relaxed">
-          Bid on team performance contracts across Allsvenskan, Superettan, Damallsvenskan and Elitettan.
+          Bid on team performance contracts across{' '}
+          <span className={`font-semibold ${LEAGUES.ALLSVENSKAN.text}`}>Allsvenskan</span>,{' '}
+          <span className={`font-semibold ${LEAGUES.SUPERETTAN.text}`}>Superettan</span>,{' '}
+          <span className={`font-semibold ${LEAGUES.DAMALLSVENSKAN.text}`}>Damallsvenskan</span> and{' '}
+          <span className={`font-semibold ${LEAGUES.ELITETTAN.text}`}>Elitettan</span>.
           Start with 1&nbsp;000 credits. The sharpest bidder wins.
         </p>
         <div className="flex gap-4 justify-center">
@@ -71,6 +76,14 @@ export default function Home() {
             </div>
           ))}
         </div>
+        <p className="text-center mt-10">
+          <Link
+            href="/rules"
+            className="text-brand-400 hover:text-brand-300 font-bold text-sm transition-colors"
+          >
+            Read the full rules →
+          </Link>
+        </p>
       </section>
 
       {/* Patterns */}

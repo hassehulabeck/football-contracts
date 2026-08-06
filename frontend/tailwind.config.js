@@ -18,6 +18,22 @@ module.exports = {
           900: '#7c2d12',
         },
         pitch: '#1a1a18', // near-black background
+
+        // One hue per league, so a row's league is readable at a glance.
+        // Purple rather than green for Damallsvenskan: green means "paid out"
+        // and red means "error" elsewhere in the UI, and these four hues are
+        // reserved for league identity alone.
+        // `accent` shades clear 6:1 contrast against `pitch`.
+        league: {
+          allsvenskan: '#3b82f6',
+          'allsvenskan-accent': '#60a5fa',
+          superettan: '#ef4444',
+          'superettan-accent': '#f87171',
+          damallsvenskan: '#a855f7',
+          'damallsvenskan-accent': '#c084fc',
+          elitettan: '#eab308',
+          'elitettan-accent': '#facc15',
+        },
       },
       fontFamily: {
         // Display/headline font (bold, striking)

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRequireAuth } from '@/lib/auth';
 import { api } from '@/lib/api';
+import { leagueStyle } from '@/lib/leagues';
 import type { Contract, LeaderboardEntry } from '@/types/api';
 
 interface MyCoupon {
@@ -13,7 +14,9 @@ interface MyCoupon {
   contract: {
     pattern: string;
     status: string;
-    team: { name: string };
+    // /api/users/me includes the whole team row, so `league` is already on the
+    // wire — see users.ts, `contract: { include: { team: true } }`.
+    team: { name: string; league: string };
     auction: { endsAt: string } | null;
   };
 }
@@ -109,7 +112,11 @@ export default function DashboardPage() {
               <tbody>
                 {activeBids.map((bid) => (
                   <tr key={bid.auction.id} className="border-b border-white/5 last:border-0">
-                    <td className="px-4 py-3 font-semibold text-orange-100">
+                    <td
+                      className={`px-4 py-3 font-semibold text-orange-100 border-l-2 ${
+                        leagueStyle(bid.auction.contract.team.league).stripe
+                      }`}
+                    >
                       <Link
                         href={`/contracts/${bid.auction.contract.id}`}
                         className="hover:text-brand-400 transition-colors"
@@ -152,7 +159,11 @@ export default function DashboardPage() {
               <tbody>
                 {me.coupons.slice(0, 20).map((coupon) => (
                   <tr key={coupon.id} className="border-b border-white/5 last:border-0">
-                    <td className="px-4 py-3 font-semibold text-orange-100">
+                    <td
+                      className={`px-4 py-3 font-semibold text-orange-100 border-l-2 ${
+                        leagueStyle(coupon.contract.team.league).stripe
+                      }`}
+                    >
                       <Link
                         href={`/contracts/${coupon.contractId}`}
                         className="hover:text-brand-400 transition-colors"
@@ -210,7 +221,11 @@ export default function DashboardPage() {
               <tbody>
                 {openContracts.map((c) => (
                   <tr key={c.id} className="border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors">
-                    <td className="px-4 py-3 font-semibold text-orange-100">{c.team.name}</td>
+                    <td
+                      className={`px-4 py-3 font-semibold text-orange-100 border-l-2 ${leagueStyle(c.team.league).stripe}`}
+                    >
+                      {c.team.name}
+                    </td>
                     <td className="px-4 py-3 font-mono font-bold text-brand-400">{c.pattern}</td>
                     <td className="px-4 py-3 tabular text-brand-400 font-semibold">
                       {c.auction ? timeRemaining(c.auction.endsAt) : '—'}
