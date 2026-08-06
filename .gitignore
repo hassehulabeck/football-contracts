@@ -6,3 +6,6 @@ build/
 *.env.local
 .DS_Store
 *.tsbuildinfo
+
+# Personal Claude Code settings. .claude/settings.json IS shared — this one is not.
+.claude/settings.local.json

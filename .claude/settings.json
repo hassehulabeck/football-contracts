@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(railway logs *)",
+      "Bash(railway status *)",
+      "Bash(railway list *)",
+      "Bash(railway whoami *)",
+      "Bash(railway deployment list *)",
+      "Bash(railway service list *)",
+      "Bash(railway domain list *)",
+      "Bash(railway tcp-proxy list *)",
+      "Bash(railway metrics *)",
+      "Bash(railway --help *)",
+      "Bash(railway --version)",
+      "Bash(npx tsc --noEmit)",
+      "Bash(npx prisma migrate status)",
+      "Bash(npx prisma generate)",
+      "Bash(npm run build)"
+    ]
+  }
+}
