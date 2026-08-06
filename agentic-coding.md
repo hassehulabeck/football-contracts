@@ -545,9 +545,14 @@ database held anything worth keeping.
 
 ### Still open
 
-The first *cron-driven* batch is Wednesday 2026-08-12, 02:00 UTC.
-`createWeeklyContracts` has now been run by hand in production via
-`npm run create:contracts:prod`, but the scheduled path itself is still unproven.
+`createWeeklyContracts` has now run in production — invoked directly out of the
+deployed build over `railway ssh`, which is the same entry point the cron uses, so
+what ran is exactly what Wednesday will run. It produced 25 ACTIVE contracts,
+5 coupons each, auctions closing 2026-08-08 08:57 UTC, and they were confirmed by
+reading `GET /api/contracts` back through the public API.
+
+What is still unproven is the *scheduled* path — that node-cron actually fires it at
+`0 2 * * 3`. Next chance is Wednesday 2026-08-12, 02:00 UTC.
 
 ---
 
