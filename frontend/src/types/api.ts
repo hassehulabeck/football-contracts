@@ -2,6 +2,13 @@ export type League = 'ALLSVENSKAN' | 'DAMALLSVENSKAN' | 'SUPERETTAN' | 'ELITETTA
 export type ContractPattern = 'WWW' | 'DDD' | 'LLL' | 'WDL' | 'LDW';
 export type ContractStatus = 'PENDING' | 'ACTIVE' | 'CLOSED' | 'FULFILLED' | 'FAILED';
 
+/**
+ * Player-facing status filter values. These are not the enum: the API maps
+ * them, because "CLOSED" reads as *finished* to a player when it means the
+ * auction is over and the result is still pending.
+ */
+export type StatusFilter = 'open' | 'awaiting' | 'fulfilled' | 'failed' | 'all';
+
 export interface Team {
   id: string;
   name: string;
@@ -12,6 +19,8 @@ export interface AuctionSummary {
   id: string;
   endsAt: string;
   closed: boolean;
+  /** Bids received. Demand, next to the coupon supply on the list page. */
+  bidCount: number;
 }
 
 export interface Contract {
@@ -21,9 +30,36 @@ export interface Contract {
   status: ContractStatus;
   couponCount: number;
   createdAt: string;
+  /** Set when the contract became FULFILLED or FAILED; null while live. */
+  resolvedAt: string | null;
   team: Team;
   auction: AuctionSummary | null;
   _count?: { coupons: number };
+}
+
+export interface ContractListResponse {
+  contracts: Contract[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+/** One of the three matches that completed a fulfilled contract's pattern. */
+export interface FulfillmentMatch {
+  playedAt: string;
+  result: 'W' | 'D' | 'L' | string;
+  homeScore: number;
+  awayScore: number;
+  isHome: boolean;
+  /** Null only if the opposing club has no Team row — see the API comment. */
+  opponent: string | null;
+}
+
+export interface ContractDetail extends Contract {
+  /** Coupons that found an owner. Can be under couponCount if bids went unpaid. */
+  couponsSold: number;
+  couponsPaid: number;
+  fulfillment: { matches: FulfillmentMatch[] } | null;
 }
 
 export interface AuctionDetail {
@@ -32,7 +68,11 @@ export interface AuctionDetail {
   endsAt: string;
   closed: boolean;
   bidCount: number;
-  sampleBid: number | null;
+  /**
+   * The winning amount, revealed only once the auction has closed. Null while
+   * bidding is open — the auction is silent by design.
+   */
+  highestBid: number | null;
   _count: { bids: number };
 }
 

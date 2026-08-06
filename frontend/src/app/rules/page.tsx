@@ -116,14 +116,18 @@ export default function RulesPage() {
           the moment it is created. Bidding is <strong className="text-orange-100">silent</strong>{' '}
           — nobody sees what anybody else bid.
         </p>
-        <p>You do get two hints about the market on each contract page:</p>
-        <ul className="list-disc list-inside space-y-1 text-white/50 marker:text-brand-500">
-          <li>the total number of bids placed so far</li>
-          <li>one randomly chosen bid amount, without the bidder&apos;s name</li>
-        </ul>
         <p>
-          The sample bid is a genuinely random pick each time the page loads — it is not the
-          highest, the lowest or the latest. Refreshing shows you a different one.
+          While the auction is open, the only thing you learn about the market is{' '}
+          <strong className="text-orange-100">how many bids have been placed</strong> — never
+          the amounts. That count is on the contract page and in the{' '}
+          <strong className="text-orange-100">Bids</strong> column of the contracts list, so
+          you can weigh it against the coupon supply before you commit.
+        </p>
+        <p>
+          Once the auction closes, the contract page also reveals the{' '}
+          <strong className="text-orange-100">highest bid</strong> it received — still without
+          the bidder&apos;s name. It tells you what the contract actually went for, which is
+          the number worth knowing next time the same team comes up.
         </p>
         <p>
           You may change your bid as often as you like until the auction closes. Only your
@@ -156,11 +160,18 @@ export default function RulesPage() {
             If you cannot cover your bid at the moment it is settled, that bid is{' '}
             <strong className="text-orange-100">skipped</strong> and the coupon passes to the
             next bidder down the list. You are never pushed into a negative balance — but you
-            do lose the coupon, and you get no warning. Keep an eye on what you have committed
-            across all your open auctions.
+            do lose the coupon, and nothing warns you beforehand. Keep an eye on what you have
+            committed across all your open auctions.
           </p>
         </div>
 
+        <p>
+          Afterwards you can always see how it went. A bid that won becomes a coupon under{' '}
+          <strong className="text-orange-100">Your coupons</strong> on your dashboard; one that
+          did not is listed under <strong className="text-orange-100">Lost contracts</strong>,
+          with the amount you bid. Losing costs you nothing — credits are only ever taken from
+          bids that win.
+        </p>
         <p>
           Auctions are swept every 15 minutes, so a contract closes at the first sweep after
           its end time rather than exactly on the second.

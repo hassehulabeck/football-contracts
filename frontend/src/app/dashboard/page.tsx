@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRequireAuth } from '@/lib/auth';
 import { api } from '@/lib/api';
 import { leagueStyle } from '@/lib/leagues';
-import type { Contract, LeaderboardEntry } from '@/types/api';
+import type { Contract, ContractListResponse, LeaderboardEntry } from '@/types/api';
 
 interface MyCoupon {
   id: string;
@@ -43,6 +43,12 @@ interface MeData {
   credits: number;
   coupons: MyCoupon[];
   bids: MyBid[];
+  /**
+   * Bids on auctions that have settled without winning a coupon. Same shape as
+   * an active bid — the API splits them so a loss leaves a visible trace
+   * instead of the row simply disappearing at close.
+   */
+  lostBids: MyBid[];
 }
 
 function timeRemaining(endsAt: string): string {
@@ -52,6 +58,10 @@ function timeRemaining(endsAt: string): string {
   const mins = Math.floor((diff % 3_600_000) / 60_000);
   if (totalHours >= 24) return `${Math.floor(totalHours / 24)}d ${totalHours % 24}h`;
   return `${totalHours}h ${mins}m`;
+}
+
+function formatDay(dt: string) {
+  return new Date(dt).toLocaleDateString('sv-SE', { month: 'short', day: 'numeric' });
 }
 
 export default function DashboardPage() {
@@ -67,9 +77,11 @@ export default function DashboardPage() {
       const pos = r.data.findIndex((u) => u.id === user.id);
       setRank(pos >= 0 ? pos + 1 : null);
     });
-    api.get<Contract[]>('/api/contracts').then((r) => {
-      setOpenContracts(r.data.filter((c) => c.status === 'ACTIVE').slice(0, 5));
-    });
+    api
+      .get<ContractListResponse>('/api/contracts', {
+        params: { status: 'open', pageSize: 5 },
+      })
+      .then((r) => setOpenContracts(r.data.contracts));
   }, [user]);
 
   if (loading || !user) {
@@ -82,6 +94,7 @@ export default function DashboardPage() {
 
   const liveCoupons = me?.coupons.filter((c) => !c.paidOut) ?? [];
   const activeBids = me?.bids ?? [];
+  const lostBids = me?.lostBids ?? [];
 
   return (
     <div className="max-w-4xl mx-auto px-6 py-10">
@@ -192,7 +205,57 @@ export default function DashboardPage() {
         </section>
       )}
 
-      {me && me.coupons.length === 0 && activeBids.length === 0 && (
+      {lostBids.length > 0 && (
+        <section className="mb-10">
+          <h2 className="text-sm font-bold text-orange-300 uppercase tracking-widest mb-3">
+            Lost contracts
+          </h2>
+          <div className="rounded-xl border border-white/10 overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-white/10 text-white/40 text-left">
+                  <th className="px-4 py-3 font-medium">Team</th>
+                  <th className="px-4 py-3 font-medium">Pattern</th>
+                  <th className="px-4 py-3 font-medium tabular">Your bid</th>
+                  <th className="px-4 py-3 font-medium">Closed</th>
+                </tr>
+              </thead>
+              <tbody>
+                {lostBids.slice(0, 20).map((bid) => (
+                  <tr key={bid.auction.id} className="border-b border-white/5 last:border-0">
+                    <td
+                      className={`px-4 py-3 font-semibold text-white/50 border-l-2 ${
+                        leagueStyle(bid.auction.contract.team.league).stripe
+                      }`}
+                    >
+                      <Link
+                        href={`/contracts/${bid.auction.contract.id}`}
+                        className="hover:text-brand-400 transition-colors"
+                      >
+                        {bid.auction.contract.team.name}
+                      </Link>
+                    </td>
+                    <td className="px-4 py-3 font-mono font-bold text-white/40">
+                      {bid.auction.contract.pattern}
+                    </td>
+                    <td className="px-4 py-3 tabular text-white/40">
+                      {bid.amount.toLocaleString()} cr
+                    </td>
+                    <td className="px-4 py-3 tabular text-white/30">
+                      {formatDay(bid.auction.endsAt)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="text-white/25 text-xs mt-2">
+            These auctions settled without your bid winning a coupon. No credits were taken.
+          </p>
+        </section>
+      )}
+
+      {me && me.coupons.length === 0 && activeBids.length === 0 && lostBids.length === 0 && (
         <p className="text-white/30 text-sm mb-8">
           No bids or coupons yet — browse open contracts to get started.
         </p>

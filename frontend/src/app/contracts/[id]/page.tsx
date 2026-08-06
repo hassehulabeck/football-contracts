@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { LeagueBadge } from '@/components/LeagueBadge';
-import type { Contract, AuctionDetail } from '@/types/api';
+import type { ContractDetail, AuctionDetail, FulfillmentMatch } from '@/types/api';
 
 const PATTERN_DESCRIPTION: Record<string, string> = {
   WWW: 'Three consecutive wins',
@@ -38,7 +38,7 @@ export default function ContractDetailPage() {
   const id = params.id as string;
   const { user } = useAuth();
 
-  const [contract, setContract] = useState<Contract | null>(null);
+  const [contract, setContract] = useState<ContractDetail | null>(null);
   const [auction, setAuction] = useState<AuctionDetail | null>(null);
   const [myBid, setMyBid] = useState<MyBid | null>(null);
   const [loading, setLoading] = useState(true);
@@ -48,7 +48,7 @@ export default function ContractDetailPage() {
   const [bidMessage, setBidMessage] = useState('');
 
   useEffect(() => {
-    api.get<Contract>(`/api/contracts/${id}`)
+    api.get<ContractDetail>(`/api/contracts/${id}`)
       .then(async (r) => {
         setContract(r.data);
         if (r.data.auction?.id) {
@@ -141,13 +141,93 @@ export default function ContractDetailPage() {
         <InfoCard label="Created" value={formatDate(contract.createdAt)} />
       </div>
 
+      {contract.status === 'FULFILLED' && (
+        <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-6 mb-6">
+          <h2 className="text-green-400 text-xs uppercase tracking-widest mb-1 font-bold">
+            Fulfilled
+          </h2>
+          {contract.resolvedAt && (
+            <p className="text-white/40 text-xs mb-4">
+              Confirmed {formatDate(contract.resolvedAt)}
+            </p>
+          )}
+
+          {contract.fulfillment ? (
+            <>
+              <p className="text-white/50 text-sm mb-3">
+                These three matches completed the pattern:
+              </p>
+              <div className="rounded-lg border border-white/10 overflow-hidden mb-4">
+                <table className="w-full text-sm">
+                  <tbody>
+                    {contract.fulfillment.matches.map((m, i) => (
+                      <MatchRow key={i} match={m} />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          ) : (
+            // The window is re-derived from the match table on read. If results
+            // were later corrected it can disappear, and saying so is better
+            // than rendering an empty box.
+            <p className="text-white/40 text-sm mb-4">
+              The matching run is no longer reconstructible from current results.
+            </p>
+          )}
+
+          <p className="text-white/50 text-sm">
+            <span className="tabular font-bold text-green-400">{contract.couponsPaid}</span>{' '}
+            {contract.couponsPaid === 1 ? 'coupon' : 'coupons'} paid out at 100 credits each.
+          </p>
+        </div>
+      )}
+
+      {contract.status === 'FAILED' && (
+        <div className="bg-white/5 border border-white/10 rounded-xl p-6 mb-6">
+          <h2 className="text-red-400 text-xs uppercase tracking-widest mb-1 font-bold">
+            Failed
+          </h2>
+          {contract.resolvedAt && (
+            <p className="text-white/40 text-xs mb-3">Closed {formatDate(contract.resolvedAt)}</p>
+          )}
+          <p className="text-white/50 text-sm">
+            {contract.team.name} never produced {contract.pattern} in three consecutive matches
+            before the season ended. The {contract.couponsSold}{' '}
+            {contract.couponsSold === 1 ? 'coupon' : 'coupons'} sold here paid nothing.
+          </p>
+        </div>
+      )}
+
+      {contract.status === 'CLOSED' && (
+        <div className="bg-white/5 border border-white/10 rounded-xl p-6 mb-6">
+          <h2 className="text-white/40 text-xs uppercase tracking-widest mb-2 font-bold">
+            Awaiting result
+          </h2>
+          <p className="text-white/50 text-sm">
+            The auction is over and {contract.couponsSold}{' '}
+            {contract.couponsSold === 1 ? 'coupon is' : 'coupons are'} held. This contract stays
+            open until {contract.team.name} produces {contract.pattern} in three consecutive
+            matches, or until the season ends on 30 November.
+          </p>
+        </div>
+      )}
+
       {contract.auction && (
         <div className="bg-white/5 border border-white/10 rounded-xl p-6 mb-6">
           <h2 className="text-white/40 text-xs uppercase tracking-widest mb-4">Auction</h2>
 
-          <div className="grid grid-cols-3 gap-4 mb-4">
+          {/* Two figures while bidding is open, three once it has settled —
+              the winning bid only exists to be shown after the fact. */}
+          <div
+            className={`grid gap-4 mb-4 ${
+              contract.auction.closed ? 'grid-cols-3' : 'grid-cols-2'
+            }`}
+          >
             <div>
-              <p className="text-white/40 text-xs mb-1">Closes</p>
+              <p className="text-white/40 text-xs mb-1">
+                {contract.auction.closed ? 'Closed' : 'Closes'}
+              </p>
               <p className="text-orange-200 text-sm font-semibold">{formatDate(contract.auction.endsAt)}</p>
             </div>
             {auction && (
@@ -156,15 +236,20 @@ export default function ContractDetailPage() {
                   <p className="text-white/40 text-xs mb-1">Bids placed</p>
                   <p className="tabular font-black text-2xl text-brand-400">{auction.bidCount}</p>
                 </div>
-                <div>
-                  <p className="text-white/40 text-xs mb-1">Sample bid</p>
-                  <p className="tabular font-black text-2xl text-brand-400">
-                    {auction.sampleBid !== null ? auction.sampleBid : '—'}
-                    {auction.sampleBid !== null && (
-                      <span className="text-white/40 text-sm font-normal ml-1">cr</span>
-                    )}
-                  </p>
-                </div>
+                {contract.auction.closed && (
+                  <div>
+                    <p className="text-white/40 text-xs mb-1">Highest bid</p>
+                    {/* `!= null` on purpose: during a deploy the old backend
+                        can still be answering, and it has no highestBid at
+                        all. Undefined must fall through to the dash. */}
+                    <p className="tabular font-black text-2xl text-brand-400">
+                      {auction.highestBid != null ? auction.highestBid : '—'}
+                      {auction.highestBid != null && (
+                        <span className="text-white/40 text-sm font-normal ml-1">cr</span>
+                      )}
+                    </p>
+                  </div>
+                )}
               </>
             )}
           </div>
@@ -227,13 +312,65 @@ export default function ContractDetailPage() {
 
           {!auctionOpen && contract.auction.closed && (
             <p className="text-white/30 text-sm border-t border-white/10 pt-4">
-              This auction has closed. Coupons have been distributed to the top{' '}
-              {contract.couponCount} bidders.
+              This auction has closed.{' '}
+              <span className="tabular text-white/50">{contract.couponsSold}</span> of{' '}
+              <span className="tabular text-white/50">{contract.couponCount}</span> coupons went
+              to the highest bidders who could cover their bid at settlement.
             </p>
           )}
         </div>
       )}
     </div>
+  );
+}
+
+const RESULT_STYLE: Record<string, string> = {
+  W: 'bg-green-500/20 text-green-400 border-green-500/40',
+  D: 'bg-white/10 text-white/60 border-white/20',
+  L: 'bg-red-500/20 text-red-400 border-red-500/40',
+};
+
+function MatchRow({ match }: { match: FulfillmentMatch }) {
+  // homeScore/awayScore are always stored home-first, so flip them for an away
+  // match to read as "us — them".
+  const [own, other] = match.isHome
+    ? [match.homeScore, match.awayScore]
+    : [match.awayScore, match.homeScore];
+
+  return (
+    <tr className="border-b border-white/5 last:border-0">
+      <td className="px-3 py-2.5 w-10">
+        <span
+          className={`inline-flex items-center justify-center w-6 h-6 rounded border font-mono font-bold text-xs ${
+            RESULT_STYLE[match.result] ?? RESULT_STYLE.D
+          }`}
+        >
+          {match.result}
+        </span>
+      </td>
+      <td className="px-3 py-2.5 tabular text-white/40 text-xs whitespace-nowrap">
+        {new Date(match.playedAt).toLocaleDateString('sv-SE', {
+          month: 'short',
+          day: 'numeric',
+        })}
+      </td>
+      <td className="px-3 py-2.5 tabular font-bold text-orange-100 whitespace-nowrap">
+        {own}–{other}
+      </td>
+      <td className="px-3 py-2.5 text-white/50">
+        {match.opponent ? (
+          <>
+            <span className="text-white/30 mr-1">vs</span>
+            {match.opponent}
+          </>
+        ) : (
+          <span className="text-white/25">Opponent unknown</span>
+        )}
+      </td>
+      <td className="px-3 py-2.5 text-white/30 text-xs text-right">
+        {match.isHome ? 'Home' : 'Away'}
+      </td>
+    </tr>
   );
 }
 

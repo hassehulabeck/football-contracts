@@ -14,7 +14,7 @@ export async function auctionRoutes(server: FastifyInstance) {
     }
   };
 
-  // Get auction info (bid count + a random sample bid to hint at the market)
+  // Get auction info (bid count while open; winning bid once settled)
   server.get('/:id', async (req, reply) => {
     const { id } = req.params as { id: string };
     const auction = await server.prisma.auction.findUnique({
@@ -26,14 +26,26 @@ export async function auctionRoutes(server: FastifyInstance) {
     });
     if (!auction) return reply.status(404).send({ error: 'Not found' });
 
-    // Reveal total bid count and one random bid amount (not the bidder)
-    const bids = await server.prisma.bid.findMany({ where: { auctionId: id }, select: { amount: true } });
-    const sampleBid = bids.length > 0 ? bids[Math.floor(Math.random() * bids.length)].amount : null;
+    // Only after settlement, and never the bidder's name. While bidding is
+    // open this stays null: revealing the top bid would turn a silent auction
+    // into an open one. The bid count alone is the live market hint.
+    //
+    // Replaces a random sample bid, which was unreadable as a signal — it was
+    // not the highest, lowest or latest, and changed on every refresh.
+    let highestBid: number | null = null;
+    if (auction.closed) {
+      const top = await server.prisma.bid.findFirst({
+        where: { auctionId: id },
+        orderBy: { amount: 'desc' },
+        select: { amount: true },
+      });
+      highestBid = top?.amount ?? null;
+    }
 
     return reply.send({
       ...auction,
       bidCount: auction._count.bids,
-      sampleBid,
+      highestBid,
     });
   });
 

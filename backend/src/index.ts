@@ -5,6 +5,7 @@ import jwt from '@fastify/jwt';
 import { prismaPlugin } from './plugins/prisma';
 import { authRoutes } from './routes/auth';
 import { contractRoutes } from './routes/contracts';
+import { teamRoutes } from './routes/teams';
 import { auctionRoutes } from './routes/auctions';
 import { userRoutes } from './routes/users';
 import { leaderboardRoutes } from './routes/leaderboard';
@@ -29,6 +30,7 @@ async function start() {
 
   await server.register(authRoutes, { prefix: '/api/auth' });
   await server.register(contractRoutes, { prefix: '/api/contracts' });
+  await server.register(teamRoutes, { prefix: '/api/teams' });
   await server.register(auctionRoutes, { prefix: '/api/auctions' });
   await server.register(userRoutes, { prefix: '/api/users' });
   await server.register(leaderboardRoutes, { prefix: '/api/leaderboard' });

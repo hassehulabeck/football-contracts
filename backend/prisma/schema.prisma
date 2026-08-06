@@ -71,6 +71,10 @@ model Contract {
   couponCount  Int             // snapshotted at creation time
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
+  // When the contract became FULFILLED or FAILED. Null while it is still live.
+  // Not derivable from updatedAt: that moves on any write, so a results feed
+  // ordered by it would reshuffle after an unrelated update.
+  resolvedAt   DateTime?
 
   team    Team     @relation(fields: [teamId], references: [id])
   coupons Coupon[]

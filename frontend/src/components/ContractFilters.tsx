@@ -1,20 +1,32 @@
 'use client';
 
 import { LEAGUES, LEAGUE_ORDER } from '@/lib/leagues';
-import type { League, Team } from '@/types/api';
+import type { League, StatusFilter, Team } from '@/types/api';
 
 export type LeagueFilter = League | 'ALL';
 
+const STATUS_OPTIONS: { value: StatusFilter; label: string }[] = [
+  { value: 'open', label: 'Auction open' },
+  { value: 'awaiting', label: 'Awaiting result' },
+  { value: 'fulfilled', label: 'Fulfilled' },
+  { value: 'failed', label: 'Failed' },
+  { value: 'all', label: 'All contracts' },
+];
+
 interface ContractFiltersProps {
+  status: StatusFilter;
+  onStatusChange: (status: StatusFilter) => void;
   league: LeagueFilter;
   onLeagueChange: (league: LeagueFilter) => void;
   teamId: string | 'ALL';
   onTeamChange: (teamId: string | 'ALL') => void;
-  /** Teams that actually have contracts, already scoped to the chosen league. */
+  /** From /api/teams, already scoped to the chosen league. */
   teams: Team[];
 }
 
 export function ContractFilters({
+  status,
+  onStatusChange,
   league,
   onLeagueChange,
   teamId,
@@ -22,7 +34,7 @@ export function ContractFilters({
   teams,
 }: ContractFiltersProps) {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-8">
+    <div className="flex flex-col gap-4 mb-8">
       <div className="flex flex-wrap gap-2">
         <button
           onClick={() => onLeagueChange('ALL')}
@@ -60,21 +72,38 @@ export function ContractFilters({
         })}
       </div>
 
-      <label className="sm:ml-auto flex items-center gap-2 text-xs text-white/40">
-        <span className="uppercase tracking-widest">Team</span>
-        <select
-          value={teamId}
-          onChange={(e) => onTeamChange(e.target.value)}
-          className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-orange-100 focus:outline-none focus:border-brand-500 max-w-[14rem]"
-        >
-          <option value="ALL">All teams</option>
-          {teams.map((team) => (
-            <option key={team.id} value={team.id}>
-              {team.name}
-            </option>
-          ))}
-        </select>
-      </label>
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+        <label className="flex items-center gap-2 text-xs text-white/40">
+          <span className="uppercase tracking-widest">Status</span>
+          <select
+            value={status}
+            onChange={(e) => onStatusChange(e.target.value as StatusFilter)}
+            className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-orange-100 focus:outline-none focus:border-brand-500"
+          >
+            {STATUS_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="flex items-center gap-2 text-xs text-white/40">
+          <span className="uppercase tracking-widest">Team</span>
+          <select
+            value={teamId}
+            onChange={(e) => onTeamChange(e.target.value)}
+            className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-orange-100 focus:outline-none focus:border-brand-500 max-w-[14rem]"
+          >
+            <option value="ALL">All teams</option>
+            {teams.map((team) => (
+              <option key={team.id} value={team.id}>
+                {team.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
     </div>
   );
 }

@@ -7,6 +7,7 @@
  */
 import { PrismaClient } from '@prisma/client';
 import { ingestMatches, toDateParam } from '../lib/ingestMatches';
+import { findPatternWindow } from '../lib/fulfillment';
 
 const prisma = new PrismaClient();
 const COUPON_PAYOUT = 100;
@@ -62,19 +63,18 @@ export async function checkContractFulfillment() {
       select: { result: true },
     });
 
-    let fulfilled = false;
-    for (let i = 0; i + 3 <= matches.length; i++) {
-      const window = matches[i].result + matches[i + 1].result + matches[i + 2].result;
-      if (window === contract.pattern) {
-        await fulfillContract(contract.id);
-        fulfilled = true;
-        fulfilledCount++;
-        break;
-      }
-    }
+    // Shared with the contract detail endpoint, so the matches shown there are
+    // the same ones this job paid out on.
+    const window = findPatternWindow(matches, contract.pattern);
 
-    if (!fulfilled && over) {
-      await prisma.contract.update({ where: { id: contract.id }, data: { status: 'FAILED' } });
+    if (window) {
+      await fulfillContract(contract.id);
+      fulfilledCount++;
+    } else if (over) {
+      await prisma.contract.update({
+        where: { id: contract.id },
+        data: { status: 'FAILED', resolvedAt: new Date() },
+      });
       failedCount++;
       console.log(
         `[checkFulfillment] Contract ${contract.id} failed — season ended without pattern ${contract.pattern}`,
@@ -98,7 +98,10 @@ async function fulfillContract(contractId: string) {
       prisma.user.update({ where: { id: c.ownerId! }, data: { credits: { increment: COUPON_PAYOUT } } }),
     ),
     ...coupons.map((c) => prisma.coupon.update({ where: { id: c.id }, data: { paidOut: true } })),
-    prisma.contract.update({ where: { id: contractId }, data: { status: 'FULFILLED' } }),
+    prisma.contract.update({
+      where: { id: contractId },
+      data: { status: 'FULFILLED', resolvedAt: new Date() },
+    }),
   ]);
 
   console.log(`[checkFulfillment] Contract ${contractId} fulfilled — paid out ${coupons.length} coupons`);

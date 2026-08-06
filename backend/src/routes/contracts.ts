@@ -1,18 +1,98 @@
 import { FastifyInstance } from 'fastify';
+import { ContractStatus, League, Prisma } from '@prisma/client';
+import { z } from 'zod';
+import { findPatternWindow } from '../lib/fulfillment';
+
+/**
+ * Player-facing status values, mapped onto the enum.
+ *
+ * "CLOSED" is not exposed under that name: to a player it reads as *finished*,
+ * when it actually means the auction is over and the result is still pending.
+ * PENDING is not exposed at all — it is the schema default that
+ * createWeeklyContracts never writes.
+ */
+const STATUS_GROUPS: Record<string, ContractStatus[]> = {
+  open: ['ACTIVE'],
+  awaiting: ['CLOSED'],
+  fulfilled: ['FULFILLED'],
+  failed: ['FAILED'],
+  all: ['ACTIVE', 'CLOSED', 'FULFILLED', 'FAILED'],
+};
+
+/** What the endpoint returned before it took any parameters. */
+const DEFAULT_STATUSES: ContractStatus[] = ['ACTIVE', 'CLOSED'];
+
+const RESOLVED: ContractStatus[] = ['FULFILLED', 'FAILED'];
+
+const MAX_PAGE_SIZE = 100;
+
+const listQuerySchema = z.object({
+  status: z.enum(['open', 'awaiting', 'fulfilled', 'failed', 'all']).optional(),
+  league: z.nativeEnum(League).optional(),
+  teamId: z.string().optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  // Clamped rather than rejected: an oversized pageSize is a caller being
+  // optimistic, not an error worth failing the request over.
+  pageSize: z.coerce.number().int().min(1).catch(50).default(50),
+});
 
 export async function contractRoutes(server: FastifyInstance) {
-  // List active contracts (with auction end time and coupon count)
+  // List contracts, filtered and paginated.
+  //
+  // Unfiltered, this returns exactly what it always did (ACTIVE + CLOSED).
+  // That default is load-bearing during a deploy: backend and frontend are
+  // separate Railway services off one push, so the new backend briefly serves
+  // the old frontend.
   server.get('/', async (req, reply) => {
-    const contracts = await server.prisma.contract.findMany({
-      where: { status: { in: ['ACTIVE', 'CLOSED'] } },
-      include: {
-        team: true,
-        auction: { select: { endsAt: true, closed: true } },
-        _count: { select: { coupons: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-    return reply.send(contracts);
+    const parsed = listQuerySchema.safeParse(req.query);
+    if (!parsed.success) {
+      return reply.status(400).send({ error: 'Invalid query', details: parsed.error.flatten() });
+    }
+    const { status, league, teamId, page } = parsed.data;
+    const pageSize = Math.min(parsed.data.pageSize, MAX_PAGE_SIZE);
+
+    const statuses = status ? STATUS_GROUPS[status] : DEFAULT_STATUSES;
+
+    const where: Prisma.ContractWhereInput = {
+      status: { in: statuses },
+      ...(teamId ? { teamId } : {}),
+      ...(league ? { team: { league } } : {}),
+    };
+
+    // A resolved-only list is a results feed, so it reads newest-resolved
+    // first. Anything that can still include live contracts orders by creation,
+    // since those have no resolvedAt to sort on.
+    const resolvedOnly = statuses.every((s) => RESOLVED.includes(s));
+    const orderBy: Prisma.ContractOrderByWithRelationInput = resolvedOnly
+      ? { resolvedAt: 'desc' }
+      : { createdAt: 'desc' };
+
+    const [contracts, total] = await server.prisma.$transaction([
+      server.prisma.contract.findMany({
+        where,
+        include: {
+          team: true,
+          auction: {
+            select: { endsAt: true, closed: true, _count: { select: { bids: true } } },
+          },
+          _count: { select: { coupons: true } },
+        },
+        orderBy,
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      server.prisma.contract.count({ where }),
+    ]);
+
+    // Flatten the bid count onto the auction, the way GET /api/auctions/:id
+    // already presents it, so the list column reads `auction.bidCount` rather
+    // than digging through Prisma's `_count`.
+    const shaped = contracts.map((c) => ({
+      ...c,
+      auction: c.auction ? { ...c.auction, bidCount: c.auction._count.bids } : null,
+    }));
+
+    return reply.send({ contracts: shaped, total, page, pageSize });
   });
 
   server.get('/:id', async (req, reply) => {
@@ -32,6 +112,63 @@ export async function contractRoutes(server: FastifyInstance) {
       },
     });
     if (!contract) return reply.status(404).send({ error: 'Not found' });
-    return reply.send(contract);
+
+    // How many coupons found an owner, and how many have actually paid out.
+    // Not the same as couponCount: bidders who could not cover their bid at
+    // settlement are skipped, so a contract can close undersubscribed.
+    const [couponsSold, couponsPaid] = await server.prisma.$transaction([
+      server.prisma.coupon.count({ where: { contractId: id, ownerId: { not: null } } }),
+      server.prisma.coupon.count({ where: { contractId: id, paidOut: true } }),
+    ]);
+
+    const fulfillment =
+      contract.status === 'FULFILLED' ? await fulfillmentDetail(server, contract) : null;
+
+    return reply.send({ ...contract, couponsSold, couponsPaid, fulfillment });
   });
+}
+
+/**
+ * The three matches that completed the pattern, with opponents.
+ *
+ * Re-derived rather than stored: findPatternWindow is the same function
+ * checkFulfillment used to decide the payout, over the same query, so the two
+ * cannot disagree.
+ */
+async function fulfillmentDetail(
+  server: FastifyInstance,
+  contract: { id: string; teamId: string; pattern: string; createdAt: Date },
+) {
+  const matches = await server.prisma.match.findMany({
+    where: { teamId: contract.teamId, playedAt: { gte: contract.createdAt } },
+    orderBy: { playedAt: 'asc' },
+  });
+
+  const window = findPatternWindow(matches, contract.pattern);
+  if (!window) return null;
+
+  // Ingest writes one row per side of every fixture, so the sibling row on the
+  // same externalId names the opponent — no join table needed.
+  const siblings = await server.prisma.match.findMany({
+    where: {
+      externalId: { in: window.map((m) => m.externalId) },
+      teamId: { not: contract.teamId },
+    },
+    select: { externalId: true, team: { select: { name: true } } },
+  });
+  const opponentByFixture = new Map(siblings.map((s) => [s.externalId, s.team.name]));
+
+  return {
+    matches: window.map((m) => ({
+      playedAt: m.playedAt,
+      result: m.result,
+      homeScore: m.homeScore,
+      awayScore: m.awayScore,
+      isHome: m.isHome,
+      // Null only if syncTeams has a gap — ingest is restricted to the four
+      // leagues, so both clubs are normally tracked. Better one unnamed
+      // opponent than a 500 on the whole page.
+      opponent: opponentByFixture.get(m.externalId) ?? null,
+    })),
+  };
 }
