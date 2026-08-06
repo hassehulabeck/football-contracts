@@ -402,6 +402,113 @@ interactive host-key acceptance the first time.
 
 ---
 
+## Phase 9 — Closing the Game Loop
+
+**Date:** 2026-08-06
+**Executed by:** Main agent (inline, no subagents)
+
+### Why no subagents here?
+
+Same reason as Phase 8, for the first half: the ingest rewrite could not be
+specified until the corrupt data had been audited, and the audit could not be
+written until the schema bug was understood. The second half — the end-to-end
+exercise — is a single script that had to run against the same database the
+first half repaired, so there was nothing to hand off.
+
+### What was wrong
+
+Phase 8 left fulfilment unscheduled as an explicit holding position. Rescheduling
+it turned out to be the smaller half of the job; auditing the 390 match rows it
+had already written surfaced two bugs that would have made the game pay out
+incorrectly.
+
+1. **`Match.externalId` was globally unique.** A fixture involves two clubs, and
+   in a Swedish league match *both* are tracked teams. Ingesting the away side hit
+   the home side's row: the upsert's `update` clause rewrote `result`, `homeScore`
+   and `awayScore` but not `teamId`. The row then asserted that team A had achieved
+   team B's result. **48 of 390 rows carried a result that contradicted their own
+   score line**, and because one fixture could only ever produce one row,
+   **37 of 60 teams had no match history at all**.
+2. **Credits could go negative.** `POST /auctions/:id/bid` checks
+   `user.credits >= amount`, but credits are not debited until the auction closes.
+   With 1000 credits you could bid 1000 on ten simultaneous auctions;
+   `closeAuctions` then decremented for every win unconditionally.
+
+Neither was reachable before now — nothing had ever generated a contract, so the
+payout path had never executed.
+
+### What was fixed
+
+- `prisma/schema.prisma` + migration `20260806090000_match_unique_per_team` —
+  `@@unique([externalId, teamId])` replaces the global unique, plus an index on
+  `(teamId, playedAt)` for the per-contract match read. The migration deletes the
+  existing rows: the ones that were never written cannot be recovered from the
+  ones that were, and re-reading the season costs four requests.
+- `src/lib/footballApi.ts` — `fetchLeagueFixtures(league, season, from, to)`
+  replaces `fetchFinishedFixtures(team, season)`. It also throws on a non-empty
+  `errors` object, which the API returns with HTTP 200.
+- `src/lib/ingestMatches.ts` (new) — league-driven ingest, one row per tracked
+  side per fixture, shared by the cron job and the backfill script.
+- `src/jobs/checkFulfillment.ts` — rewritten on top of it, with a 4-day rolling
+  lookback. **Rescheduled** at `20 */3 * * *`.
+- `src/jobs/closeAuctions.ts` — re-checks each winner's balance at settlement and
+  passes the coupon down to the next bidder if they cannot pay.
+- `src/scripts/ingestMatches.ts` (new) — `npm run ingest:matches`, with
+  `--full` / `--days=N` / `--season=` / `--dry-run`.
+
+### Key decisions
+
+**Per-league fetch, not per-team.** This is what made rescheduling possible. Four
+requests return every fixture in all four leagues; the per-team form spent sixty
+requests to learn the same thing, because both clubs in a league match are teams we
+follow. At `*/3` hours that is **32 requests/day against a 7500/day quota**, down
+from ~1440. The cadence is now set by acceptable payout latency, not by quota.
+
+**This narrows fulfilment to league matches only.** The per-team endpoint also
+returned Svenska Cupen and European fixtures, so a cup result could previously
+complete a WWW. One team had 36 ingested matches against a ~30-game league season.
+Restricting to the four leagues is the reading the game description implies, and it
+falls out of the per-league fetch for free — but it is a behaviour change, not just
+an optimisation.
+
+**Result is derived from the score line, not the API's `winner` flag.** `winner` is
+`null` for a draw, which the old code relied on, but it is also `null` on fixtures
+the API has not finalised. Deriving from goals makes a malformed row impossible to
+mistake for a draw — and a fixture marked FT with a null score is skipped outright
+rather than written as 0-0, which would otherwise be able to complete a `DDD`.
+
+**A failed league fetch does not abort the run.** One league erroring must not look
+like "no matches were played" — that is the failure mode that corrupted the original
+data. The other three still ingest, and evaluation still runs against what is
+already stored.
+
+**Unaffordable winners forfeit rather than overdraw.** The alternative — reserving
+credits at bid time — would mean a user's balance no longer reflects what they own,
+and would need releasing on every outbid. Settling at close and passing over anyone
+who cannot pay keeps one ledger and makes the auction self-consistent.
+
+### Verified end to end
+
+Against the live database and real ingested results, through the actual job
+functions: 60 teams, **852 match rows** (426 fixtures × 2 sides), 0 rows whose
+result contradicts its score line, all 60 teams covered — up from 390 rows,
+48 wrong, 23 teams covered.
+
+A tagged fixture set then drove the full loop and was deleted afterwards:
+auction close assigns coupons and debits the exact bid; a bidder who cannot cover
+their second win is skipped and stays at 50 credits rather than −50; a backdated
+contract on Hammarby's real 2026-05-03 WWW run reaches FULFILLED and pays its two
+holders 100 each; a contract with no matches in its window stays CLOSED rather than
+FAILED; and a second fulfilment run pays nobody twice. 15/15 checks passed.
+
+### Still open
+
+Contract *generation* has still never run — the first natural batch is Wednesday
+2026-08-12, 02:00 UTC. The loop is verified against contracts created by hand, so
+`createWeeklyContracts` is the one link not yet exercised in production.
+
+---
+
 ## Phase Status
 
 | Phase | Description | Status |
@@ -415,13 +522,13 @@ interactive host-key acceptance the first time.
 | 6 | Dashboard & UI | Done 2026-06-25 |
 | 7 | Deployment config | Done 2026-06-25 — **superseded by Phase 8** |
 | 8 | Repair & live deployment | Done 2026-08-05 |
+| 9 | Closing the game loop | Done 2026-08-06 |
 
 ### Known open items
 
-- **Fulfillment is unscheduled.** The payout half of the game loop does not run.
-  This is the one thing standing between "deployed" and "playable".
-- **No contracts have ever been generated.** Bidding, auction close and payout are
-  untested against real data. First natural batch: Wednesday 2026-08-12, 02:00 UTC.
+- **`createWeeklyContracts` has never run in production.** Bidding, auction close
+  and payout are now verified end to end against real results, but only on
+  hand-created contracts. First natural batch: Wednesday 2026-08-12, 02:00 UTC.
 - **No verified Resend domain.** Activation email only reaches the Resend account
   owner's own address, so nobody else can complete registration.
 - **api-football Pro expires 2026-09-05.** Deliberate — Pro is being kept for one

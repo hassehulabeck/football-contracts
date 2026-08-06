@@ -116,11 +116,18 @@ model Bid {
 
 // Stores individual match results from api-football.com, per tracked team.
 // result is W/D/L from that team's perspective (pre-computed on ingest).
+//
+// One fixture produces TWO rows when both clubs are tracked — one per side.
+// externalId alone must NOT be unique: it was, and because both sides of a
+// Swedish league match are tracked teams, the second side's upsert overwrote
+// the first side's result while leaving teamId pointing at the first team.
+// That silently inverted 48 of 390 rows and left 37 of 60 teams with no
+// matches at all.
 model Match {
   id         String   @id @default(cuid())
-  externalId Int      @unique // api-football.com fixture ID
+  externalId Int // api-football.com fixture ID
   teamId     String
-  result     String   // "W", "D", or "L"
+  result     String // "W", "D", or "L"
   homeScore  Int
   awayScore  Int
   isHome     Boolean
@@ -128,4 +135,7 @@ model Match {
   createdAt  DateTime @default(now())
 
   team Team @relation(fields: [teamId], references: [id])
+
+  @@unique([externalId, teamId])
+  @@index([teamId, playedAt])
 }

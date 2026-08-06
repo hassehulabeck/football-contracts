@@ -21,13 +21,39 @@ export async function fetchTeams(leagueId: number, season: number) {
   return res.data.response as Array<{ team: { id: number; name: string } }>;
 }
 
-export async function fetchFinishedFixtures(teamId: number, season: number) {
+export type ApiFixture = {
+  fixture: { id: number; date: string };
+  league: { id: number; name: string; round: string };
+  teams: { home: { id: number; name: string }; away: { id: number; name: string } };
+  goals: { home: number | null; away: number | null };
+};
+
+/**
+ * Finished fixtures for one league, optionally limited to a date window.
+ *
+ * Deliberately per-league and not per-team. The per-team form costs one request
+ * per team — 60 requests to learn what four requests already contain, since both
+ * clubs in a Swedish league match are tracked. It also pulls in cup and European
+ * fixtures, which is the wrong result set: a contract is about league form.
+ *
+ * `from`/`to` are inclusive YYYY-MM-DD strings in the API's own timezone (UTC).
+ */
+export async function fetchLeagueFixtures(
+  leagueId: number,
+  season: number,
+  from?: string,
+  to?: string,
+) {
   const res = await client.get('/fixtures', {
-    params: { team: teamId, season, status: 'FT' },
+    params: { league: leagueId, season, status: 'FT', ...(from && to ? { from, to } : {}) },
   });
-  return res.data.response as Array<{
-    fixture: { id: number; date: string };
-    teams: { home: { id: number; winner: boolean | null }; away: { id: number; winner: boolean | null } };
-    goals: { home: number; away: number };
-  }>;
+
+  const errors = res.data.errors;
+  // The API answers 200 with an `errors` object for plan/parameter problems —
+  // an empty `response` would otherwise read as "no matches were played".
+  if (errors && (Array.isArray(errors) ? errors.length > 0 : Object.keys(errors).length > 0)) {
+    throw new Error(`api-football rejected league=${leagueId} season=${season}: ${JSON.stringify(errors)}`);
+  }
+
+  return res.data.response as ApiFixture[];
 }
