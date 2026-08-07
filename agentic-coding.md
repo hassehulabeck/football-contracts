@@ -556,6 +556,145 @@ What is still unproven is the *scheduled* path — that node-cron actually fires
 
 ---
 
+## Phase 10 — Auction Dry-Run & Dashboard Visibility Fixes
+
+**Date:** 2026-08-06
+**Executed by:** Main agent, 4 Explore subagents across two planning rounds (2 + 2, each pair in parallel)
+
+### Why subagents here
+
+Two genuinely separate investigations were needed before any code could be
+written: how the auction settlement logic and its data model actually work
+end to end, and separately, what the dashboard/contract/rules pages currently
+render and where the seams are. Those don't need to share context until the
+findings are reconciled into one plan, so each round ran two Explore agents in
+parallel rather than one agent covering backend and frontend serially. Every
+round of implementation that followed was done inline — the changes touch the
+same handful of files in a fixed dependency order (backend response shape,
+then the shared frontend type, then the component that reads it) — the same
+"tight chain, no subagents" reasoning as every prior phase.
+
+### Part 1 — first real settlement in production
+
+`closeExpiredAuctions()` had run in production exactly zero times before this
+session. Phase 9 left `createWeeklyContracts` having produced 25 real
+contracts, but none had ever closed. Rather than wait for the natural close
+on 2026-08-08 or the cron on 2026-08-12, the settlement job was run on demand:
+10 disposable users created directly in the production DB (bcrypt-hashed
+password, `emailVerified: true` set directly — there is no admin endpoint for
+this, and Resend can't usefully activate 10 fake mailboxes), each placing one
+random bid on two of the 25 open contracts (Djurgården W, 5–60 credits;
+Degerfors IF, 300–990 credits — deliberately different ranges so the
+pre-existing 34-credit human bid on Djurgården would be competitive rather
+than lost by construction). Both auctions were backdated 60 seconds into the
+past and the unmodified `closeExpiredAuctions()` was invoked directly from the
+already-compiled `dist/jobs/closeAuctions.js` on the container — not
+reimplemented, the real production function.
+
+Result: 5/5 coupons assigned on both contracts, from 11 and 10 bidders
+respectively; one genuine tie (two 49-credit bids on Djurgården, correctly
+broken by earliest `createdAt`); the human bid (34 credits, ranked 8th of 11)
+lost. No bidder was skipped for insufficient credits this run — the random
+draw didn't happen to produce that case, so that branch of the settlement
+logic is still unexercised in production.
+
+**Technique established:** a disposable Node script, base64-encoded and piped
+through `railway ssh --service football-coupons-backend "echo $B64 | base64
+-d > /app/__script.js && node /app/__script.js; rm -f /app/__script.js"`, run
+from `/app` so `node_modules` resolves and the already-compiled `dist/` can be
+`require()`'d directly. No git commit, no deploy, nothing left on the
+container afterward. This is the pattern for any future one-off production
+task — test fixtures, forcing a job to run early, ad hoc queries — that
+doesn't warrant a permanent script under `src/scripts/`.
+
+### Part 2 — three gaps the dry run exposed, fixed and shipped
+
+Watching the settlement land surfaced three UX problems, planned and built in
+one pass:
+
+1. **A losing bid left no trace.** `GET /api/users/me` filtered `bids` to
+   `auction.closed = false`, so a settled bid disappeared whether it won or
+   lost — confirmed directly, since the human's 34-credit loss was invisible
+   through the API before the fix. Fixed by fetching all bids unfiltered and
+   splitting server-side into `bids` (unchanged shape, still open-only, so the
+   existing dashboard table needed no change) and a new `lostBids` (closed,
+   and no coupon owned on that contract — cross-referenced against the
+   coupons already being fetched, no extra query). Rendered as a third
+   stacked dashboard section, matching the existing "Active bids" / "Your
+   coupons" pattern rather than building the app's first tab widget — a
+   direct choice the user made when asked, over new tab UI.
+2. **The "sample bid" hint was noise.** It was a genuinely random pick from
+   all bids, different on every page load, explicitly documented on the rules
+   page as "not the highest, the lowest or the latest." Replaced with
+   `highestBid`: `null` while the auction is open (revealing the leading bid
+   mid-auction would end the silent-auction design), the real top bid once
+   closed. The contract page's stat grid reflows from 2 columns to 3 when the
+   auction closes.
+3. **No demand signal on the contracts list.** `couponCount` (supply) was the
+   only number shown per row. Added `auction.bidCount` (demand) as a column
+   next to it, via the same `_count: { bids: true }` pattern the detail
+   endpoint already used.
+
+Rules page sections 6 and 7 rewritten to match — notably, "you get no
+warning" could no longer stand unqualified once losses became visible after
+the fact; it now specifies the warning is absent *during* the auction, not
+afterward.
+
+All three changes were verified against the real Part 1 data before shipping:
+the new `/me` query logic, run standalone against production, returned
+`lostBids: 1` for the human account at exactly 34 credits; `highestBid`
+returned 58 and 836 for the two closed auctions and `null` for a live one;
+`bidCount` matched `_count.bids` on every row checked.
+
+### Key decisions
+
+**Shipped bundled with pre-existing uncommitted work, not separately.** The
+working tree already held an uncommitted contracts-list filter/pagination
+rework, a `resolvedAt` migration, and a `/api/teams` route when this session
+started. This session's `contracts.ts` change built directly on top of that
+uncommitted code, and the frontend changes depended on the uncommitted
+`ContractListResponse` shape — there was no way to commit one without the
+other.
+
+**`!= null` on `highestBid`, not `!== null`.** The repo's own comment on the
+contracts route notes the two Railway services deploy independently off one
+push, so a newly-deployed frontend can briefly call the still-old backend,
+which sends no `highestBid` field at all. `undefined !== null` would have
+rendered a bare "cr" with no number during that window; `!= null` treats both
+`undefined` and `null` as "nothing to show."
+
+**No reason code on a lost bid ("outbid" vs "couldn't cover it at
+settlement").** Both are recoverable after the fact from existing data — a
+lost bid ranked within the top `couponCount` by amount was necessarily
+skipped for credits, since that's the only way the settlement logic drops a
+top-ranked bidder. Left out of scope because it wasn't asked for; flagged as a
+natural follow-up rather than built speculatively.
+
+### Correction, same day
+
+While polling for the frontend deploy to land, a 10-minute wait was reported
+as "still old" based on grepping the server-rendered HTML of `/contracts` for
+the string "Bids." That page builds its table client-side after an API
+fetch, so the column header can never appear in that HTML regardless of which
+build is live — the check was wrong, not the deploy. The static `/rules` page
+(no client fetch) confirmed the new build was live within seconds of the
+push.
+
+### Still open
+
+- The 10 test users, their bids, and the 10 coupons they won on Djurgården W
+  and Degerfors IF remain live in production, and those two contracts are
+  sitting `CLOSED` two days early. Cleanup (delete the test users/bids/
+  coupons, restore both contracts to `ACTIVE` with their original
+  `2026-08-08T08:57:14.112Z` end time, including the human's original bid)
+  was offered and not yet requested.
+- The insufficient-credits-at-settlement skip path is still unexercised in
+  production — Part 1's random bids didn't happen to trigger it.
+- `createWeeklyContracts` on its scheduled cron (`0 2 * * 3`) remains
+  unproven, per Phase 9 — next natural chance 2026-08-12.
+
+---
+
 ## Phase Status
 
 | Phase | Description | Status |
@@ -570,12 +709,25 @@ What is still unproven is the *scheduled* path — that node-cron actually fires
 | 7 | Deployment config | Done 2026-06-25 — **superseded by Phase 8** |
 | 8 | Repair & live deployment | Done 2026-08-05 |
 | 9 | Closing the game loop | Done 2026-08-06 |
+| 10 | Auction dry-run & dashboard visibility fixes | Done 2026-08-06 |
 
 ### Known open items
 
-- **`createWeeklyContracts` has never run in production.** Bidding, auction close
-  and payout are now verified end to end against real results, but only on
-  hand-created contracts. First natural batch: Wednesday 2026-08-12, 02:00 UTC.
+- **`createWeeklyContracts` has never run on its scheduled cron.** Bidding,
+  auction close and payout are now verified end to end against real results
+  in production (Phase 10), but only via on-demand invocation, not the
+  `0 2 * * 3` trigger itself. First natural chance: Wednesday 2026-08-12,
+  02:00 UTC.
+- **10 disposable test users and 2 prematurely-closed contracts are still
+  live in production**, left over from Phase 10's dry run. Cleanup was
+  offered and not yet requested — see Phase 10, "Still open."
+- **The insufficient-credits-at-settlement skip has never actually fired in
+  production.** `closeExpiredAuctions` has now settled real auctions twice
+  (Phase 10), but no bidder has yet been unable to cover a bid at close.
+- **No local development database exists.** `backend/.env` points at
+  `localhost:5432`, but that Postgres instance has no `football_contracts`
+  database or `postgres` role — confirmed directly in Phase 10. Every
+  verification since Phase 8 has run against production via `railway ssh`.
 - **No verified Resend domain.** Activation email only reaches the Resend account
   owner's own address, so nobody else can complete registration.
 - **api-football Pro expires 2026-09-05.** Deliberate — Pro is being kept for one
