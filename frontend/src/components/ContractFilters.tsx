@@ -104,10 +104,11 @@ export function ContractFilters({
             className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-orange-100 focus:outline-none focus:border-brand-500 max-w-[14rem]"
           >
             <option value="ALL">All teams</option>
-            {/* Grouped by league, not a flat list. Dropping the "Women" suffix
-                leaves a women's club sharing its men's club's name, and an
-                <option> cannot carry the badge that tells them apart
-                everywhere else. The group heading does that job. */}
+            {/* Grouped by league, not a flat list. Dropping the " W" suffix
+                leaves a women's club sharing its men's club's name — Sandviken
+                is in both Superettan and Elitettan — and an <option> cannot
+                carry the badge that tells them apart everywhere else. The group
+                heading does that job. */}
             {teamsByLeague(teams).map(([league, leagueTeams]) => (
               <optgroup key={league} label={leagueStyle(league).label}>
                 {leagueTeams.map((team) => (
