@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 import { leagueStyle } from '@/lib/leagues';
+import { formatTeamName } from '@/lib/formatTeamName';
 import { LeagueBadge } from '@/components/LeagueBadge';
 import { ContractFilters, type LeagueFilter } from '@/components/ContractFilters';
 import type {
@@ -228,7 +229,7 @@ function ContractTable({ contracts }: { contracts: Contract[] }) {
                 <td
                   className={`px-4 py-3 font-semibold text-orange-100 border-l-2 ${leagueStyle(c.team.league).stripe}`}
                 >
-                  {c.team.name}
+                  {formatTeamName(c.team.name)}
                 </td>
                 <td className="px-4 py-3 hidden sm:table-cell">
                   <LeagueBadge league={c.team.league} />

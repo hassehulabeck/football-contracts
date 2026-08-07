@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRequireAuth } from '@/lib/auth';
 import { api } from '@/lib/api';
 import { leagueStyle } from '@/lib/leagues';
+import { formatTeamName } from '@/lib/formatTeamName';
 import type { Contract, ContractListResponse, LeaderboardEntry } from '@/types/api';
 
 interface MyCoupon {
@@ -134,7 +135,7 @@ export default function DashboardPage() {
                         href={`/contracts/${bid.auction.contract.id}`}
                         className="hover:text-brand-400 transition-colors"
                       >
-                        {bid.auction.contract.team.name}
+                        {formatTeamName(bid.auction.contract.team.name)}
                       </Link>
                     </td>
                     <td className="px-4 py-3 font-mono font-bold text-brand-400">
@@ -181,7 +182,7 @@ export default function DashboardPage() {
                         href={`/contracts/${coupon.contractId}`}
                         className="hover:text-brand-400 transition-colors"
                       >
-                        {coupon.contract.team.name}
+                        {formatTeamName(coupon.contract.team.name)}
                       </Link>
                     </td>
                     <td className="px-4 py-3 font-mono font-bold text-brand-400">
@@ -232,7 +233,7 @@ export default function DashboardPage() {
                         href={`/contracts/${bid.auction.contract.id}`}
                         className="hover:text-brand-400 transition-colors"
                       >
-                        {bid.auction.contract.team.name}
+                        {formatTeamName(bid.auction.contract.team.name)}
                       </Link>
                     </td>
                     <td className="px-4 py-3 font-mono font-bold text-white/40">
@@ -287,7 +288,7 @@ export default function DashboardPage() {
                     <td
                       className={`px-4 py-3 font-semibold text-orange-100 border-l-2 ${leagueStyle(c.team.league).stripe}`}
                     >
-                      {c.team.name}
+                      {formatTeamName(c.team.name)}
                     </td>
                     <td className="px-4 py-3 font-mono font-bold text-brand-400">{c.pattern}</td>
                     <td className="px-4 py-3 tabular text-brand-400 font-semibold">

@@ -1,6 +1,7 @@
 'use client';
 
-import { LEAGUES, LEAGUE_ORDER } from '@/lib/leagues';
+import { LEAGUES, LEAGUE_ORDER, leagueStyle } from '@/lib/leagues';
+import { formatTeamName } from '@/lib/formatTeamName';
 import type { League, StatusFilter, Team } from '@/types/api';
 
 export type LeagueFilter = League | 'ALL';
@@ -22,6 +23,13 @@ interface ContractFiltersProps {
   onTeamChange: (teamId: string | 'ALL') => void;
   /** From /api/teams, already scoped to the chosen league. */
   teams: Team[];
+}
+
+/** Teams bucketed by league, in the site's league order. Empty buckets dropped. */
+function teamsByLeague(teams: Team[]): [League, Team[]][] {
+  return LEAGUE_ORDER.map(
+    (league) => [league, teams.filter((t) => t.league === league)] as [League, Team[]],
+  ).filter(([, leagueTeams]) => leagueTeams.length > 0);
 }
 
 export function ContractFilters({
@@ -96,10 +104,18 @@ export function ContractFilters({
             className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-orange-100 focus:outline-none focus:border-brand-500 max-w-[14rem]"
           >
             <option value="ALL">All teams</option>
-            {teams.map((team) => (
-              <option key={team.id} value={team.id}>
-                {team.name}
-              </option>
+            {/* Grouped by league, not a flat list. Dropping the "Women" suffix
+                leaves a women's club sharing its men's club's name, and an
+                <option> cannot carry the badge that tells them apart
+                everywhere else. The group heading does that job. */}
+            {teamsByLeague(teams).map(([league, leagueTeams]) => (
+              <optgroup key={league} label={leagueStyle(league).label}>
+                {leagueTeams.map((team) => (
+                  <option key={team.id} value={team.id}>
+                    {formatTeamName(team.name)}
+                  </option>
+                ))}
+              </optgroup>
             ))}
           </select>
         </label>
