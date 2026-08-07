@@ -17,6 +17,8 @@
     "sync:teams:prod": "node dist/scripts/syncTeams.js",
     "ingest:matches": "ts-node --transpile-only src/scripts/ingestMatches.ts",
     "ingest:matches:prod": "node dist/scripts/ingestMatches.js",
+    "ingest:fixtures": "ts-node --transpile-only src/scripts/ingestFixtures.ts",
+    "ingest:fixtures:prod": "node dist/scripts/ingestFixtures.js",
     "create:contracts": "ts-node --transpile-only src/scripts/createContracts.ts",
     "create:contracts:prod": "node dist/scripts/createContracts.js"
   },

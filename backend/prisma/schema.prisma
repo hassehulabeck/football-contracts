@@ -37,6 +37,12 @@ enum ContractStatus {
   FAILED
 }
 
+enum FixtureStatus {
+  SCHEDULED
+  POSTPONED
+  CANCELLED
+}
+
 // ─── Models ──────────────────────────────────────────────────────────────────
 
 model User {
@@ -74,6 +80,7 @@ model Team {
 
   contracts Contract[]
   matches   Match[]
+  fixtures  Fixture[]
 }
 
 model Contract {
@@ -155,4 +162,35 @@ model Match {
 
   @@unique([externalId, teamId])
   @@index([teamId, playedAt])
+}
+
+// Fixtures that have not been played yet, so a contract page can show what is
+// coming for the team rather than only what already happened.
+//
+// Shaped per-side like Match, and unique on (externalId, teamId) for the same
+// reason — see the comment above Match. Both clubs in a Swedish league fixture
+// are tracked, so one fixture is two rows and each side reads its opponent off
+// the sibling row.
+//
+// Kept in its own table rather than as nullable columns on Match: a Match row
+// asserts a result, and every consumer of it (findPatternWindow above all)
+// counts on that. A scheduled fixture has no result to assert.
+//
+// Refreshed weekly. api-football has no push or webhook for reschedules, so a
+// row can be stale for up to a week; readers filter on kickoffAt rather than
+// trusting the table to be current.
+model Fixture {
+  id         String        @id @default(cuid())
+  externalId Int // api-football.com fixture ID
+  teamId     String
+  isHome     Boolean
+  kickoffAt  DateTime
+  status     FixtureStatus @default(SCHEDULED)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  team Team @relation(fields: [teamId], references: [id])
+
+  @@unique([externalId, teamId])
+  @@index([teamId, kickoffAt])
 }

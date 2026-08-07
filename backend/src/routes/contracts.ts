@@ -124,8 +124,72 @@ export async function contractRoutes(server: FastifyInstance) {
     const fulfillment =
       contract.status === 'FULFILLED' ? await fulfillmentDetail(server, contract) : null;
 
-    return reply.send({ ...contract, couponsSold, couponsPaid, fulfillment });
+    // Unconditional, unlike `fulfillment`. Form is what a bidder wants before
+    // deciding, so it has to be there while the auction is still open.
+    const schedule = await teamSchedule(server, contract.teamId);
+
+    return reply.send({ ...contract, couponsSold, couponsPaid, fulfillment, schedule });
   });
+}
+
+/**
+ * The team's whole season either side of now: fixtures still to come, and
+ * every result already in.
+ *
+ * Not scoped to the contract. `fulfillment` answers "which matches paid this
+ * out"; this answers "how is this team playing", which is the question a bidder
+ * has before an auction closes, and it does not stop at the contract's window.
+ */
+async function teamSchedule(server: FastifyInstance, teamId: string) {
+  const now = new Date();
+
+  const [upcoming, recent] = await server.prisma.$transaction([
+    // Filtered on kickoffAt, not on the Fixture table being current. The weekly
+    // refresh leaves a played fixture sitting here until the next run, and
+    // without this it would show up as still to come.
+    server.prisma.fixture.findMany({
+      where: { teamId, kickoffAt: { gte: now } },
+      orderBy: { kickoffAt: 'asc' },
+    }),
+    server.prisma.match.findMany({
+      where: { teamId },
+      orderBy: { playedAt: 'desc' },
+    }),
+  ]);
+
+  // Same sibling-row trick as fulfillmentDetail: ingest writes one row per side
+  // of a fixture, so the row on the same externalId with a different teamId is
+  // the opponent.
+  const [fixtureSiblings, matchSiblings] = await server.prisma.$transaction([
+    server.prisma.fixture.findMany({
+      where: { externalId: { in: upcoming.map((f) => f.externalId) }, teamId: { not: teamId } },
+      select: { externalId: true, team: { select: { name: true } } },
+    }),
+    server.prisma.match.findMany({
+      where: { externalId: { in: recent.map((m) => m.externalId) }, teamId: { not: teamId } },
+      select: { externalId: true, team: { select: { name: true } } },
+    }),
+  ]);
+
+  const upcomingOpponent = new Map(fixtureSiblings.map((f) => [f.externalId, f.team.name]));
+  const recentOpponent = new Map(matchSiblings.map((m) => [m.externalId, m.team.name]));
+
+  return {
+    upcoming: upcoming.map((f) => ({
+      kickoffAt: f.kickoffAt,
+      isHome: f.isHome,
+      status: f.status,
+      opponent: upcomingOpponent.get(f.externalId) ?? null,
+    })),
+    recent: recent.map((m) => ({
+      playedAt: m.playedAt,
+      result: m.result,
+      homeScore: m.homeScore,
+      awayScore: m.awayScore,
+      isHome: m.isHome,
+      opponent: recentOpponent.get(m.externalId) ?? null,
+    })),
+  };
 }
 
 /**

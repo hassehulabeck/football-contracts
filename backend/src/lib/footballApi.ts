@@ -22,7 +22,7 @@ export async function fetchTeams(leagueId: number, season: number) {
 }
 
 export type ApiFixture = {
-  fixture: { id: number; date: string };
+  fixture: { id: number; date: string; status: { short: string } };
   league: { id: number; name: string; round: string };
   teams: { home: { id: number; name: string }; away: { id: number; name: string } };
   goals: { home: number | null; away: number | null };
@@ -44,8 +44,40 @@ export async function fetchLeagueFixtures(
   from?: string,
   to?: string,
 ) {
+  return getFixtures(leagueId, season, 'FT', from, to);
+}
+
+/**
+ * Fixtures that have not been played, for the upcoming-schedule table.
+ *
+ * Postponed and cancelled fixtures are pulled alongside the scheduled ones on
+ * purpose. Filtering to NS would make a postponed match disappear from the
+ * schedule entirely, which reads as "no game that week" rather than "this game
+ * is off" — and with a weekly refresh, that wrong impression would stand for
+ * days.
+ *
+ * Same per-league shape and cost as fetchLeagueFixtures above.
+ */
+export async function fetchUpcomingLeagueFixtures(
+  leagueId: number,
+  season: number,
+  from?: string,
+  to?: string,
+) {
+  // api-football takes several statuses as one dash-joined value.
+  // TBD is a fixture with a date but no confirmed kick-off time yet.
+  return getFixtures(leagueId, season, 'NS-TBD-PST-CANC', from, to);
+}
+
+async function getFixtures(
+  leagueId: number,
+  season: number,
+  status: string,
+  from?: string,
+  to?: string,
+) {
   const res = await client.get('/fixtures', {
-    params: { league: leagueId, season, status: 'FT', ...(from && to ? { from, to } : {}) },
+    params: { league: leagueId, season, status, ...(from && to ? { from, to } : {}) },
   });
 
   const errors = res.data.errors;

@@ -55,11 +55,32 @@ export interface FulfillmentMatch {
   opponent: string | null;
 }
 
+/** A fixture the team has not played yet. */
+export interface ScheduleFixture {
+  kickoffAt: string;
+  isHome: boolean;
+  status: 'SCHEDULED' | 'POSTPONED' | 'CANCELLED' | string;
+  /** Null only if the opposing club has no Team row — see the API comment. */
+  opponent: string | null;
+}
+
+/**
+ * The team's season either side of now. Independent of contract status — this
+ * is form, which a bidder wants while the auction is still open.
+ */
+export interface TeamScheduleData {
+  upcoming: ScheduleFixture[];
+  /** Every result on record, newest first. Same shape as a fulfillment match. */
+  recent: FulfillmentMatch[];
+}
+
 export interface ContractDetail extends Contract {
   /** Coupons that found an owner. Can be under couponCount if bids went unpaid. */
   couponsSold: number;
   couponsPaid: number;
   fulfillment: { matches: FulfillmentMatch[] } | null;
+  /** Optional: an old backend answering mid-deploy does not send this. */
+  schedule?: TeamScheduleData;
 }
 
 export interface AuctionDetail {
