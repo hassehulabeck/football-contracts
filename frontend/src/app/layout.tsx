@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { AuthProvider } from '@/lib/auth';
 import { Navbar } from '@/components/Navbar';
+import { UsernameGate } from '@/components/UsernameGate';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -13,6 +14,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body className="min-h-screen flex flex-col">
         <AuthProvider>
+          <UsernameGate />
           <Navbar />
           <main className="flex-1">{children}</main>
         </AuthProvider>

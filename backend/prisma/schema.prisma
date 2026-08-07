@@ -46,6 +46,19 @@ model User {
   emailVerified   Boolean   @default(false)
   activationToken String?   @unique
   credits         Int       @default(1000)
+  // The public identity, shown on the leaderboard in place of the email.
+  //
+  // Nullable because every account predates the column, and registration does
+  // not ask for one — the app forces it to be set on next login instead. Uses
+  // are expected to null-guard; the leaderboard falls back to "Anonymous"
+  // rather than leaking the email it was added to hide.
+  //
+  // @unique is case-sensitive: Postgres has no case-insensitive unique index
+  // without citext. Case-insensitive collisions are rejected in the route
+  // before the write, and this constraint is the backstop for the race.
+  username          String?   @unique
+  // Null until the first username is set, so a first set is never rate-limited.
+  usernameChangedAt DateTime?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 

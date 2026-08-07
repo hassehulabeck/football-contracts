@@ -67,6 +67,16 @@ export async function authRoutes(server: FastifyInstance) {
 
     const token = server.jwt.sign({ sub: user.id, email: user.email });
 
-    return reply.send({ token, user: { id: user.id, email: user.email, credits: user.credits } });
+    // username rides along so the client knows immediately whether to send the
+    // player to /settings/username, without a second round trip to /users/me.
+    return reply.send({
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        credits: user.credits,
+        username: user.username,
+      },
+    });
   });
 }

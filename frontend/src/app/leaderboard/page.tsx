@@ -68,7 +68,7 @@ export default function LeaderboardPage() {
                     </td>
                     <td className="px-4 py-3">
                       <span className={`font-semibold ${isMe ? 'text-orange-200' : 'text-orange-100'}`}>
-                        {entry.email}
+                        {entry.displayName}
                       </span>
                       {isMe && (
                         <span className="ml-2 text-xs text-brand-400 font-bold uppercase tracking-widest">

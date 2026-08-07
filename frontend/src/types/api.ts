@@ -78,6 +78,11 @@ export interface AuctionDetail {
 
 export interface LeaderboardEntry {
   id: string;
-  email: string;
+  /**
+   * The player's username, or "Anonymous" for an account that has not set one
+   * yet. Resolved by the API — the leaderboard is public, so the email it
+   * replaced is never on the wire.
+   */
+  displayName: string;
   credits: number;
 }
