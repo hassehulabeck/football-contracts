@@ -8,6 +8,7 @@ import { useAuth } from '@/lib/auth';
 import { formatTeamName } from '@/lib/formatTeamName';
 import { LeagueBadge } from '@/components/LeagueBadge';
 import { MatchRow } from '@/components/MatchRow';
+import { PatternProgress } from '@/components/PatternProgress';
 import { TeamSchedule } from '@/components/TeamSchedule';
 import type { ContractDetail, AuctionDetail } from '@/types/api';
 
@@ -140,7 +141,7 @@ export default function ContractDetailPage() {
       <p className="text-orange-200 text-xl mb-8">{PATTERN_DESCRIPTION[contract.pattern]}</p>
 
       <div className="grid grid-cols-2 gap-3 mb-8">
-        <InfoCard label="Pattern" value={contract.pattern} mono />
+        <PatternProgress pattern={contract.pattern} progress={contract.progress} />
         <InfoCard label="Coupons" value={String(contract.couponCount)} />
         <InfoCard label="Status" value={STATUS_LABEL[contract.status]} />
         <InfoCard label="Created" value={formatDate(contract.createdAt)} />
@@ -341,13 +342,11 @@ export default function ContractDetailPage() {
   );
 }
 
-function InfoCard({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
+function InfoCard({ label, value }: { label: string; value: string }) {
   return (
     <div className="bg-white/5 border border-white/10 rounded-xl p-4">
       <p className="text-white/40 text-xs uppercase tracking-wide mb-1">{label}</p>
-      <p className={`font-semibold text-orange-100 ${mono ? 'font-mono text-brand-400 text-lg' : ''}`}>
-        {value}
-      </p>
+      <p className="font-semibold text-orange-100">{value}</p>
     </div>
   );
 }

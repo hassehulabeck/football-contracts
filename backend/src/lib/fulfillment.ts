@@ -32,3 +32,52 @@ export function findPatternWindow<T extends ResultBearing>(
   }
   return null;
 }
+
+/** How much of a pattern the team's current run has produced. */
+export interface PatternProgress<T> {
+  /** Leading pattern letters the run has produced. 0 when there is no run. */
+  matched: number;
+  /** The matches making up the run, oldest first. `matched` of them. */
+  matches: T[];
+  /** The whole pattern is accounted for — this contract is payable. */
+  complete: boolean;
+}
+
+/**
+ * How far a team has got through a pattern, for showing progress mid-contract.
+ *
+ * `findPatternWindow` answers only "did a full run ever happen", which is all a
+ * payout needs. This answers "how far along is the team right now", which is
+ * what someone holding a coupon wants to see before the third match is played.
+ *
+ * Completion is delegated to `findPatternWindow` rather than re-decided here, so
+ * a page showing a full run can never contradict the job that pays it out.
+ *
+ * The live run is the longest tail of results that is still a prefix of the
+ * pattern. Deriving it from the tail rather than counting forward is what makes
+ * a broken run reset correctly: after W-W-L on WWW nothing is left, but the L in
+ * L-D-L on LDW is a fresh first letter, not a wasted one.
+ *
+ * `matches` must be ordered by `playedAt` ascending and restricted to matches
+ * played after the contract was created — same input as `findPatternWindow`.
+ */
+export function patternProgress<T extends ResultBearing>(
+  matches: T[],
+  pattern: ContractPattern | string,
+): PatternProgress<T> {
+  const window = findPatternWindow(matches, pattern);
+  if (window) return { matched: pattern.length, matches: window, complete: true };
+
+  // Longest tail first: a two-match run must not report as one just because the
+  // shorter tail also happens to be a prefix. Capped one below the full length
+  // because findPatternWindow already ruled a complete run out.
+  const longest = Math.min(pattern.length - 1, matches.length);
+  for (let len = longest; len > 0; len--) {
+    const tail = matches.slice(matches.length - len);
+    if (tail.map((m) => m.result).join('') === pattern.slice(0, len)) {
+      return { matched: len, matches: tail, complete: false };
+    }
+  }
+
+  return { matched: 0, matches: [], complete: false };
+}

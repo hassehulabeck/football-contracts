@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { ContractStatus, League, Prisma } from '@prisma/client';
 import { z } from 'zod';
-import { findPatternWindow } from '../lib/fulfillment';
+import { findPatternWindow, patternProgress } from '../lib/fulfillment';
 
 /**
  * Player-facing status values, mapped onto the enum.
@@ -124,11 +124,18 @@ export async function contractRoutes(server: FastifyInstance) {
     const fulfillment =
       contract.status === 'FULFILLED' ? await fulfillmentDetail(server, contract) : null;
 
-    // Unconditional, unlike `fulfillment`. Form is what a bidder wants before
-    // deciding, so it has to be there while the auction is still open.
-    const schedule = await teamSchedule(server, contract.teamId);
+    // Both unconditional, unlike `fulfillment`. Form is what a bidder wants
+    // before deciding, so it has to be there while the auction is still open,
+    // and pattern progress is the same question one match at a time. Progress is
+    // not restricted to live contracts either: on a resolved one it is the run
+    // that did or did not get there, which is what someone reading an old
+    // contract came to see.
+    const [schedule, progress] = await Promise.all([
+      teamSchedule(server, contract.teamId),
+      progressDetail(server, contract),
+    ]);
 
-    return reply.send({ ...contract, couponsSold, couponsPaid, fulfillment, schedule });
+    return reply.send({ ...contract, couponsSold, couponsPaid, fulfillment, schedule, progress });
   });
 }
 
@@ -232,6 +239,52 @@ async function fulfillmentDetail(
       // Null only if syncTeams has a gap — ingest is restricted to the four
       // leagues, so both clubs are normally tracked. Better one unnamed
       // opponent than a 500 on the whole page.
+      opponent: opponentByFixture.get(m.externalId) ?? null,
+    })),
+  };
+}
+
+/**
+ * How far through the pattern the team is right now, and on which matches.
+ *
+ * Deliberately the same query as fulfillmentDetail — same team, same "played
+ * after the contract was created", same ascending order — because patternProgress
+ * settles completion through findPatternWindow. Narrow this query and the page
+ * would start counting matches the payout job does not.
+ */
+async function progressDetail(
+  server: FastifyInstance,
+  contract: { teamId: string; pattern: string; createdAt: Date },
+) {
+  const matches = await server.prisma.match.findMany({
+    where: { teamId: contract.teamId, playedAt: { gte: contract.createdAt } },
+    orderBy: { playedAt: 'asc' },
+  });
+
+  const progress = patternProgress(matches, contract.pattern);
+
+  // Nothing to name, and nothing for the letters to point at.
+  if (progress.matched === 0) return { matched: 0, complete: false, matches: [] };
+
+  // Same sibling-row trick as fulfillmentDetail.
+  const siblings = await server.prisma.match.findMany({
+    where: {
+      externalId: { in: progress.matches.map((m) => m.externalId) },
+      teamId: { not: contract.teamId },
+    },
+    select: { externalId: true, team: { select: { name: true } } },
+  });
+  const opponentByFixture = new Map(siblings.map((s) => [s.externalId, s.team.name]));
+
+  return {
+    matched: progress.matched,
+    complete: progress.complete,
+    matches: progress.matches.map((m) => ({
+      playedAt: m.playedAt,
+      result: m.result,
+      homeScore: m.homeScore,
+      awayScore: m.awayScore,
+      isHome: m.isHome,
       opponent: opponentByFixture.get(m.externalId) ?? null,
     })),
   };

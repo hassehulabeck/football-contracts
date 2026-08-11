@@ -74,6 +74,21 @@ export interface TeamScheduleData {
   recent: FulfillmentMatch[];
 }
 
+/**
+ * How far the team's current run has got through the contract's pattern.
+ *
+ * Present whatever the status is: while the auction is open it is a preview, and
+ * on a resolved contract it is the run that did or did not get there.
+ */
+export interface PatternProgressData {
+  /** Leading pattern letters produced so far. 0 when there is no run. */
+  matched: number;
+  /** The full pattern is accounted for — the contract is payable. */
+  complete: boolean;
+  /** The matches making up the run, oldest first. `matched` of them. */
+  matches: FulfillmentMatch[];
+}
+
 export interface ContractDetail extends Contract {
   /** Coupons that found an owner. Can be under couponCount if bids went unpaid. */
   couponsSold: number;
@@ -81,6 +96,8 @@ export interface ContractDetail extends Contract {
   fulfillment: { matches: FulfillmentMatch[] } | null;
   /** Optional: an old backend answering mid-deploy does not send this. */
   schedule?: TeamScheduleData;
+  /** Optional: an old backend answering mid-deploy does not send this. */
+  progress?: PatternProgressData;
 }
 
 export interface AuctionDetail {
