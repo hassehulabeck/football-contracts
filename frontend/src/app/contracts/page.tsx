@@ -5,12 +5,16 @@ import Link from 'next/link';
 import { api } from '@/lib/api';
 import { leagueStyle } from '@/lib/leagues';
 import { formatTeamName } from '@/lib/formatTeamName';
+import { formatContractRun, nextContractRun } from '@/lib/nextContractRun';
 import { LeagueBadge } from '@/components/LeagueBadge';
+import { TeamLogo } from '@/components/TeamLogo';
+import { StatTile } from '@/components/ui/StatTile';
 import { ContractFilters, type LeagueFilter } from '@/components/ContractFilters';
 import type {
   Contract,
   ContractListResponse,
   ContractStatus,
+  ContractSummary,
   StatusFilter,
   Team,
 } from '@/types/api';
@@ -57,6 +61,27 @@ export default function ContractsPage() {
   const [page, setPage] = useState(1);
 
   const [teams, setTeams] = useState<Team[]>([]);
+  const [summary, setSummary] = useState<ContractSummary | null>(null);
+
+  // Deliberately independent of `load()`: these counts describe every contract
+  // on the site, so they must not move when a filter narrows the table below.
+  // Left null if the request fails — an old backend mid-deploy has no such
+  // endpoint, and the tiles are context, not the page.
+  useEffect(() => {
+    api
+      .get<ContractSummary>('/api/contracts/summary')
+      .then((r) => setSummary(r.data))
+      .catch(() => setSummary(null));
+  }, []);
+
+  // Nothing is open, so the default "Auction open" filter would open on an empty
+  // table. Switching to "All contracts" shows the season instead. Guarded on
+  // `status === 'open'`, which is only still true if the player has not chosen
+  // a filter themselves — this must not overrule an explicit choice.
+  useEffect(() => {
+    if (summary?.open === 0 && status === 'open') setStatus('all');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [summary]);
 
   // Teams come from /api/teams rather than from the loaded contracts: with the
   // list paginated, deriving them from one page would make the dropdown shift
@@ -129,6 +154,37 @@ export default function ContractsPage() {
           Read the rules →
         </Link>
       </p>
+
+      {summary && (
+        <div className="mb-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <StatTile label="Auction open" value={String(summary.open)} muted={summary.open === 0} />
+            <StatTile
+              label="Awaiting result"
+              value={String(summary.awaiting)}
+              muted={summary.awaiting === 0}
+            />
+            <StatTile
+              label="Fulfilled"
+              value={String(summary.fulfilled)}
+              muted={summary.fulfilled === 0}
+            />
+            <StatTile label="Failed" value={String(summary.failed)} muted={summary.failed === 0} />
+          </div>
+
+          {/* Only when nothing is open. The point is to answer "so when can I
+              bid again?" rather than leaving the player on an empty table. */}
+          {summary.open === 0 && (
+            <p className="mt-4 bg-brand-500/10 border border-brand-500/30 rounded-xl px-4 py-3 text-sm text-orange-100">
+              No auctions open right now — the next contracts are built{' '}
+              <span className="font-bold text-brand-300">
+                {formatContractRun(nextContractRun())}
+              </span>
+              .
+            </p>
+          )}
+        </div>
+      )}
 
       <ContractFilters
         status={status}
@@ -229,7 +285,10 @@ function ContractTable({ contracts }: { contracts: Contract[] }) {
                 <td
                   className={`px-4 py-3 font-semibold text-orange-100 border-l-2 ${leagueStyle(c.team.league).stripe}`}
                 >
-                  {formatTeamName(c.team.name)}
+                  <span className="inline-flex items-center gap-2">
+                    <TeamLogo externalId={c.team.externalId} />
+                    {formatTeamName(c.team.name)}
+                  </span>
                 </td>
                 <td className="px-4 py-3 hidden sm:table-cell">
                   <LeagueBadge league={c.team.league} />

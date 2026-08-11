@@ -6,6 +6,8 @@ import { useRequireAuth } from '@/lib/auth';
 import { api } from '@/lib/api';
 import { leagueStyle } from '@/lib/leagues';
 import { formatTeamName } from '@/lib/formatTeamName';
+import { TeamLogo } from '@/components/TeamLogo';
+import { StatTile } from '@/components/ui/StatTile';
 import type { Contract, ContractListResponse, LeaderboardEntry } from '@/types/api';
 
 interface MyCoupon {
@@ -15,9 +17,9 @@ interface MyCoupon {
   contract: {
     pattern: string;
     status: string;
-    // /api/users/me includes the whole team row, so `league` is already on the
-    // wire — see users.ts, `contract: { include: { team: true } }`.
-    team: { name: string; league: string };
+    // /api/users/me includes the whole team row, so `league` and `externalId`
+    // are already on the wire — see users.ts, `contract: { include: { team: true } }`.
+    team: { name: string; league: string; externalId?: number };
     auction: { endsAt: string } | null;
   };
 }
@@ -33,7 +35,8 @@ interface MyBid {
       id: string;
       pattern: string;
       status: string;
-      team: { name: string; league: string };
+      /** Optional: an old backend mid-deploy selects no externalId here. */
+      team: { name: string; league: string; externalId?: number };
     };
   };
 }
@@ -103,9 +106,9 @@ export default function DashboardPage() {
       <p className="text-white/50 mb-10">{user.email}</p>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
-        <StatCard label="Credits" value={user.credits.toLocaleString()} />
-        <StatCard label="Live coupons" value={me ? String(liveCoupons.length) : '—'} />
-        <StatCard label="Rank" value={rank ? `#${rank}` : '—'} />
+        <StatTile label="Credits" value={user.credits.toLocaleString()} />
+        <StatTile label="Live coupons" value={me ? String(liveCoupons.length) : '—'} />
+        <StatTile label="Rank" value={rank ? `#${rank}` : '—'} />
       </div>
 
       {activeBids.length > 0 && (
@@ -133,8 +136,9 @@ export default function DashboardPage() {
                     >
                       <Link
                         href={`/contracts/${bid.auction.contract.id}`}
-                        className="hover:text-brand-400 transition-colors"
+                        className="inline-flex items-center gap-2 hover:text-brand-400 transition-colors"
                       >
+                        <TeamLogo externalId={bid.auction.contract.team.externalId} />
                         {formatTeamName(bid.auction.contract.team.name)}
                       </Link>
                     </td>
@@ -180,8 +184,9 @@ export default function DashboardPage() {
                     >
                       <Link
                         href={`/contracts/${coupon.contractId}`}
-                        className="hover:text-brand-400 transition-colors"
+                        className="inline-flex items-center gap-2 hover:text-brand-400 transition-colors"
                       >
+                        <TeamLogo externalId={coupon.contract.team.externalId} />
                         {formatTeamName(coupon.contract.team.name)}
                       </Link>
                     </td>
@@ -231,8 +236,15 @@ export default function DashboardPage() {
                     >
                       <Link
                         href={`/contracts/${bid.auction.contract.id}`}
-                        className="hover:text-brand-400 transition-colors"
+                        className="inline-flex items-center gap-2 hover:text-brand-400 transition-colors"
                       >
+                        {/* Dimmed with the rest of the row — a lost bid is
+                            history, and a full-colour crest would pull the eye
+                            to it over the live tables above. */}
+                        <TeamLogo
+                          externalId={bid.auction.contract.team.externalId}
+                          className="opacity-50"
+                        />
                         {formatTeamName(bid.auction.contract.team.name)}
                       </Link>
                     </td>
@@ -288,7 +300,10 @@ export default function DashboardPage() {
                     <td
                       className={`px-4 py-3 font-semibold text-orange-100 border-l-2 ${leagueStyle(c.team.league).stripe}`}
                     >
-                      {formatTeamName(c.team.name)}
+                      <span className="inline-flex items-center gap-2">
+                        <TeamLogo externalId={c.team.externalId} />
+                        {formatTeamName(c.team.name)}
+                      </span>
                     </td>
                     <td className="px-4 py-3 font-mono font-bold text-brand-400">{c.pattern}</td>
                     <td className="px-4 py-3 tabular text-brand-400 font-semibold">
@@ -309,15 +324,6 @@ export default function DashboardPage() {
           </div>
         </section>
       )}
-    </div>
-  );
-}
-
-function StatCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="bg-white/5 border border-white/10 rounded-xl p-6">
-      <p className="text-white/50 text-sm uppercase tracking-wide mb-1">{label}</p>
-      <p className="tabular text-3xl font-black text-brand-400">{value}</p>
     </div>
   );
 }

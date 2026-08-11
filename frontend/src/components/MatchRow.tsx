@@ -1,4 +1,5 @@
 import { formatTeamName } from '@/lib/formatTeamName';
+import { TeamLogo } from '@/components/TeamLogo';
 import type { FulfillmentMatch } from '@/types/api';
 
 export const RESULT_STYLE: Record<string, string> = {
@@ -42,10 +43,11 @@ export function MatchRow({ match }: { match: FulfillmentMatch }) {
       </td>
       <td className="px-3 py-2.5 text-white/50">
         {match.opponent ? (
-          <>
-            <span className="text-white/30 mr-1">vs</span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="text-white/30">vs</span>
+            <TeamLogo externalId={match.opponentTeamId} className="w-3.5 h-3.5" />
             {formatTeamName(match.opponent)}
-          </>
+          </span>
         ) : (
           <span className="text-white/25">Opponent unknown</span>
         )}

@@ -13,6 +13,11 @@ export interface Team {
   id: string;
   name: string;
   league: League;
+  /**
+   * The api-football team id. Optional only because an old backend answering
+   * mid-deploy does not select it — TeamLogo renders nothing without it.
+   */
+  externalId?: number;
 }
 
 export interface AuctionSummary {
@@ -37,6 +42,17 @@ export interface Contract {
   _count?: { coupons: number };
 }
 
+/**
+ * Contract counts per status group, unaffected by the list filters. Answers
+ * "how much is going on right now", which a filtered page total does not.
+ */
+export interface ContractSummary {
+  open: number;
+  awaiting: number;
+  fulfilled: number;
+  failed: number;
+}
+
 export interface ContractListResponse {
   contracts: Contract[];
   total: number;
@@ -53,6 +69,8 @@ export interface FulfillmentMatch {
   isHome: boolean;
   /** Null only if the opposing club has no Team row — see the API comment. */
   opponent: string | null;
+  /** The opponent's api-football id, for its crest. Null on the same gap. */
+  opponentTeamId?: number | null;
 }
 
 /** A fixture the team has not played yet. */
@@ -62,6 +80,8 @@ export interface ScheduleFixture {
   status: 'SCHEDULED' | 'POSTPONED' | 'CANCELLED' | string;
   /** Null only if the opposing club has no Team row — see the API comment. */
   opponent: string | null;
+  /** The opponent's api-football id, for its crest. Null on the same gap. */
+  opponentTeamId?: number | null;
 }
 
 /**

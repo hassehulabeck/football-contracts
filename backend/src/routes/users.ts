@@ -59,7 +59,9 @@ export async function userRoutes(server: FastifyInstance) {
                     id: true,
                     pattern: true,
                     status: true,
-                    team: { select: { name: true, league: true } },
+                    // externalId is the api-football team id the crest URL is
+                    // built from — the coupons above get it via `team: true`.
+                    team: { select: { name: true, league: true, externalId: true } },
                   },
                 },
               },

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { formatTeamName } from '@/lib/formatTeamName';
 import { MatchRow } from '@/components/MatchRow';
+import { TeamLogo } from '@/components/TeamLogo';
 import type { ScheduleFixture, TeamScheduleData } from '@/types/api';
 
 /** How many rows each section shows before "see more". */
@@ -100,10 +101,11 @@ function FixtureRow({ fixture }: { fixture: ScheduleFixture }) {
       </td>
       <td className={`px-3 py-2.5 ${off ? 'text-white/30 line-through' : 'text-white/50'}`}>
         {fixture.opponent ? (
-          <>
-            <span className="text-white/30 mr-1">vs</span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="text-white/30">vs</span>
+            <TeamLogo externalId={fixture.opponentTeamId} className="w-3.5 h-3.5" />
             {formatTeamName(fixture.opponent)}
-          </>
+          </span>
         ) : (
           <span className="text-white/25">Opponent unknown</span>
         )}
