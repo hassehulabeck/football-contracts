@@ -1,7 +1,7 @@
 /**
  * Generates a batch of contracts on demand: npm run create:contracts
  *
- * Normally the cron fires this every Wednesday at 02:00 UTC. This runs the same
+ * Normally the cron fires this every Wednesday at 03:00 Swedish time. This runs the same
  * job by hand — for seeding a batch to play against, or for shortening the
  * auction so a full bid -> close -> payout cycle can be watched in one sitting.
  *
