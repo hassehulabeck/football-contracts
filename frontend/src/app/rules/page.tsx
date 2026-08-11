@@ -73,7 +73,7 @@ export default function RulesPage() {
 
       <Section n="4" title="How contracts appear">
         <p>
-          Every <strong className="text-orange-100">Wednesday at 03:00 CET</strong> the system
+          Every <strong className="text-orange-100">Wednesday at 03:00 Swedish time</strong> the system
           creates <strong className="text-orange-100">25 new contracts</strong>. Each one picks
           a team at random from all four leagues, and a result pattern at random from these
           five:

@@ -95,6 +95,25 @@ export async function contractRoutes(server: FastifyInstance) {
     return reply.send({ contracts: shaped, total, page, pageSize });
   });
 
+  /**
+   * How many contracts sit in each player-facing status group, ignoring every
+   * filter the list endpoint takes.
+   *
+   * Deliberately not derived from the list response: that is paginated and
+   * filtered, so its `total` answers "how many match what you are looking at",
+   * which is a different question from "how much is going on right now".
+   */
+  server.get('/summary', async (_req, reply) => {
+    const [open, awaiting, fulfilled, failed] = await server.prisma.$transaction([
+      server.prisma.contract.count({ where: { status: { in: STATUS_GROUPS.open } } }),
+      server.prisma.contract.count({ where: { status: { in: STATUS_GROUPS.awaiting } } }),
+      server.prisma.contract.count({ where: { status: { in: STATUS_GROUPS.fulfilled } } }),
+      server.prisma.contract.count({ where: { status: { in: STATUS_GROUPS.failed } } }),
+    ]);
+
+    return reply.send({ open, awaiting, fulfilled, failed });
+  });
+
   server.get('/:id', async (req, reply) => {
     const { id } = req.params as { id: string };
     const contract = await server.prisma.contract.findUnique({
@@ -151,7 +170,7 @@ async function teamSchedule(server: FastifyInstance, teamId: string) {
   const now = new Date();
 
   const [upcoming, recent] = await server.prisma.$transaction([
-    // Filtered on kickoffAt, not on the Fixture table being current. The weekly
+    // Filtered on kickoffAt, not on the Fixture table being current. The daily
     // refresh leaves a played fixture sitting here until the next run, and
     // without this it would show up as still to come.
     server.prisma.fixture.findMany({
@@ -170,23 +189,26 @@ async function teamSchedule(server: FastifyInstance, teamId: string) {
   const [fixtureSiblings, matchSiblings] = await server.prisma.$transaction([
     server.prisma.fixture.findMany({
       where: { externalId: { in: upcoming.map((f) => f.externalId) }, teamId: { not: teamId } },
-      select: { externalId: true, team: { select: { name: true } } },
+      select: { externalId: true, team: { select: { name: true, externalId: true } } },
     }),
     server.prisma.match.findMany({
       where: { externalId: { in: recent.map((m) => m.externalId) }, teamId: { not: teamId } },
-      select: { externalId: true, team: { select: { name: true } } },
+      select: { externalId: true, team: { select: { name: true, externalId: true } } },
     }),
   ]);
 
-  const upcomingOpponent = new Map(fixtureSiblings.map((f) => [f.externalId, f.team.name]));
-  const recentOpponent = new Map(matchSiblings.map((m) => [m.externalId, m.team.name]));
+  // The team, not just its name: the api-football id it was synced under is what
+  // the frontend builds the crest URL from.
+  const upcomingOpponent = new Map(fixtureSiblings.map((f) => [f.externalId, f.team]));
+  const recentOpponent = new Map(matchSiblings.map((m) => [m.externalId, m.team]));
 
   return {
     upcoming: upcoming.map((f) => ({
       kickoffAt: f.kickoffAt,
       isHome: f.isHome,
       status: f.status,
-      opponent: upcomingOpponent.get(f.externalId) ?? null,
+      opponent: upcomingOpponent.get(f.externalId)?.name ?? null,
+      opponentTeamId: upcomingOpponent.get(f.externalId)?.externalId ?? null,
     })),
     recent: recent.map((m) => ({
       playedAt: m.playedAt,
@@ -194,7 +216,8 @@ async function teamSchedule(server: FastifyInstance, teamId: string) {
       homeScore: m.homeScore,
       awayScore: m.awayScore,
       isHome: m.isHome,
-      opponent: recentOpponent.get(m.externalId) ?? null,
+      opponent: recentOpponent.get(m.externalId)?.name ?? null,
+      opponentTeamId: recentOpponent.get(m.externalId)?.externalId ?? null,
     })),
   };
 }
@@ -225,9 +248,9 @@ async function fulfillmentDetail(
       externalId: { in: window.map((m) => m.externalId) },
       teamId: { not: contract.teamId },
     },
-    select: { externalId: true, team: { select: { name: true } } },
+    select: { externalId: true, team: { select: { name: true, externalId: true } } },
   });
-  const opponentByFixture = new Map(siblings.map((s) => [s.externalId, s.team.name]));
+  const opponentByFixture = new Map(siblings.map((s) => [s.externalId, s.team]));
 
   return {
     matches: window.map((m) => ({
@@ -239,7 +262,8 @@ async function fulfillmentDetail(
       // Null only if syncTeams has a gap — ingest is restricted to the four
       // leagues, so both clubs are normally tracked. Better one unnamed
       // opponent than a 500 on the whole page.
-      opponent: opponentByFixture.get(m.externalId) ?? null,
+      opponent: opponentByFixture.get(m.externalId)?.name ?? null,
+      opponentTeamId: opponentByFixture.get(m.externalId)?.externalId ?? null,
     })),
   };
 }
@@ -272,9 +296,9 @@ async function progressDetail(
       externalId: { in: progress.matches.map((m) => m.externalId) },
       teamId: { not: contract.teamId },
     },
-    select: { externalId: true, team: { select: { name: true } } },
+    select: { externalId: true, team: { select: { name: true, externalId: true } } },
   });
-  const opponentByFixture = new Map(siblings.map((s) => [s.externalId, s.team.name]));
+  const opponentByFixture = new Map(siblings.map((s) => [s.externalId, s.team]));
 
   return {
     matched: progress.matched,
@@ -285,7 +309,8 @@ async function progressDetail(
       homeScore: m.homeScore,
       awayScore: m.awayScore,
       isHome: m.isHome,
-      opponent: opponentByFixture.get(m.externalId) ?? null,
+      opponent: opponentByFixture.get(m.externalId)?.name ?? null,
+      opponentTeamId: opponentByFixture.get(m.externalId)?.externalId ?? null,
     })),
   };
 }

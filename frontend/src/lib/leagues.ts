@@ -70,6 +70,20 @@ export const LEAGUES: Record<League, LeagueStyle> = {
   },
 };
 
+/**
+ * League crests, from api-football's public media CDN.
+ *
+ * Keyed by the same league IDs the backend syncs with (`LEAGUE_IDS` in
+ * `backend/src/lib/footballApi.ts`) — hardcoded here rather than fetched,
+ * because four static URLs are not worth an endpoint or a schema column.
+ */
+export const LEAGUE_LOGO: Record<League, string> = {
+  ALLSVENSKAN: 'https://media.api-sports.io/football/leagues/113.png',
+  SUPERETTAN: 'https://media.api-sports.io/football/leagues/114.png',
+  DAMALLSVENSKAN: 'https://media.api-sports.io/football/leagues/549.png',
+  ELITETTAN: 'https://media.api-sports.io/football/leagues/736.png',
+};
+
 /** Display order — men's top flight first, then the tiers below it. */
 export const LEAGUE_ORDER: League[] = [
   'ALLSVENSKAN',

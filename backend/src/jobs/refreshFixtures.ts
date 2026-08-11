@@ -1,10 +1,11 @@
 /**
- * Re-reads the upcoming league schedule once a week.
+ * Re-reads the upcoming league schedule once a day.
  *
  * api-football is poll-only — there is no webhook for a reschedule — so a
- * fixture moved on Thursday is not visible here until the next run. That is
- * acceptable for a schedule shown as context on a contract page, and the read
- * side filters on kickoffAt rather than trusting this table to be current.
+ * fixture moved after a run is not visible here until the next one. A daily
+ * cadence keeps that gap under a day, which is roughly the notice a postponement
+ * gets in the first place; the read side still filters on kickoffAt rather than
+ * trusting this table to be current.
  *
  * Four requests per run, one per league.
  */

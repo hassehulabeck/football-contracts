@@ -1,6 +1,6 @@
 'use client';
 
-import { LEAGUES, LEAGUE_ORDER, leagueStyle } from '@/lib/leagues';
+import { LEAGUES, LEAGUE_LOGO, LEAGUE_ORDER, leagueStyle } from '@/lib/leagues';
 import { formatTeamName } from '@/lib/formatTeamName';
 import type { League, StatusFilter, Team } from '@/types/api';
 
@@ -68,11 +68,20 @@ export function ContractFilters({
                   : 'border-white/10 text-white/40 hover:text-white/70 hover:border-white/25'
               }`}
             >
-              <span
-                className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                  active ? style.dot : 'bg-white/25'
-                }`}
+              {/* The crest replaces the coloured dot, as in LeagueBadge. It
+                  cannot carry the active state the way a tinted dot did, so an
+                  unselected league dims its logo instead — the pill's own
+                  border and text colour still say which one is on. */}
+              <img
+                src={LEAGUE_LOGO[key]}
+                alt=""
                 aria-hidden="true"
+                className={`w-3.5 h-3.5 object-contain shrink-0 transition-opacity ${
+                  active ? 'opacity-100' : 'opacity-50'
+                }`}
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                }}
               />
               {style.label}
             </button>

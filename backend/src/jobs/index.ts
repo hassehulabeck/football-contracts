@@ -5,10 +5,17 @@ import { checkContractFulfillment } from './checkFulfillment';
 import { refreshFixtures } from './refreshFixtures';
 
 export function registerJobs() {
-  // Every Wednesday at 03:00 CET (02:00 UTC).
+  // Every Wednesday at 03:00 Swedish time.
+  //
+  // Scheduled in Europe/Stockholm rather than UTC on purpose. As `0 2 * * 3`
+  // UTC this fired at 04:00 local through the summer half of the season, while
+  // the rules page, the contracts page and description.md all promised 03:00 —
+  // the season runs April–November, so the promise was wrong most of the time.
+  // Letting the zone handle CET/CEST makes 03:00 true year-round.
+  //
   // Wrapped, not passed by reference: node-cron hands the callback the fire
   // time, which would otherwise arrive as the job's options argument.
-  cron.schedule('0 2 * * 3', () => createWeeklyContracts(), { timezone: 'UTC' });
+  cron.schedule('0 3 * * 3', () => createWeeklyContracts(), { timezone: 'Europe/Stockholm' });
 
   // Every 15 minutes — close any auctions that have passed their end time
   cron.schedule('*/15 * * * *', closeExpiredAuctions);
@@ -19,10 +26,14 @@ export function registerJobs() {
   // The old per-team ingest cost ~1440/day, which is why this was unscheduled.
   cron.schedule('20 */3 * * *', checkContractFulfillment, { timezone: 'UTC' });
 
-  // Weekly, two hours after the contract job so the two do not share a tick.
-  // A schedule changes on the scale of days and api-football has no push for
-  // reschedules, so there is nothing a tighter cadence would catch sooner.
-  cron.schedule('0 4 * * 3', () => refreshFixtures(), { timezone: 'UTC' });
+  // Daily at 04:00 UTC — two or three hours after the Wednesday contract job
+  // depending on the season's offset, so the two never share a tick either way.
+  // Kept in UTC because nothing about a fixture poll is local-time-sensitive.
+  // api-football has no push for reschedules, so a postponed match is only as
+  // fresh as the last poll; daily keeps a moved fixture from sitting wrong on a
+  // contract page for the better part of a week. Costs 4 requests a day against
+  // a 7500/day quota.
+  cron.schedule('0 4 * * *', () => refreshFixtures(), { timezone: 'UTC' });
 
   console.log('Scheduled jobs registered');
 }

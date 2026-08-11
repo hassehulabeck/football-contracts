@@ -9,6 +9,7 @@ import { formatTeamName } from '@/lib/formatTeamName';
 import { LeagueBadge } from '@/components/LeagueBadge';
 import { MatchRow } from '@/components/MatchRow';
 import { PatternProgress } from '@/components/PatternProgress';
+import { TeamLogo } from '@/components/TeamLogo';
 import { TeamSchedule } from '@/components/TeamSchedule';
 import type { ContractDetail, AuctionDetail } from '@/types/api';
 
@@ -135,7 +136,8 @@ export default function ContractDetailPage() {
       <div className="mb-3">
         <LeagueBadge league={contract.team.league} />
       </div>
-      <h1 className="text-4xl font-black text-brand-500 mb-1">
+      <h1 className="text-4xl font-black text-brand-500 mb-1 flex items-center gap-3">
+        <TeamLogo externalId={contract.team.externalId} className="w-8 h-8" />
         {formatTeamName(contract.team.name)}
       </h1>
       <p className="text-orange-200 text-xl mb-8">{PATTERN_DESCRIPTION[contract.pattern]}</p>
