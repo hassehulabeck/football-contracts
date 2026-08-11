@@ -19,10 +19,12 @@ export function registerJobs() {
   // The old per-team ingest cost ~1440/day, which is why this was unscheduled.
   cron.schedule('20 */3 * * *', checkContractFulfillment, { timezone: 'UTC' });
 
-  // Weekly, two hours after the contract job so the two do not share a tick.
-  // A schedule changes on the scale of days and api-football has no push for
-  // reschedules, so there is nothing a tighter cadence would catch sooner.
-  cron.schedule('0 4 * * 3', () => refreshFixtures(), { timezone: 'UTC' });
+  // Daily at 04:00 UTC — still two hours after the Wednesday contract job, so
+  // the two never share a tick. api-football has no push for reschedules, so a
+  // postponed match is only as fresh as the last poll; daily keeps a moved
+  // fixture from sitting wrong on a contract page for the better part of a week.
+  // Costs 4 requests a day against a 7500/day quota.
+  cron.schedule('0 4 * * *', () => refreshFixtures(), { timezone: 'UTC' });
 
   console.log('Scheduled jobs registered');
 }
