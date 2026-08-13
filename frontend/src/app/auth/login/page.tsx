@@ -15,19 +15,39 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [unverified, setUnverified] = useState(false);
+  const [resendState, setResendState] = useState<'idle' | 'sending' | 'sent'>('idle');
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setUnverified(false);
+    setResendState('idle');
     setLoading(true);
     try {
       const res = await api.post('/api/auth/login', { email, password });
       login(res.data.token, res.data.user);
       router.push('/dashboard');
     } catch (err: any) {
-      setError(err.response?.data?.error ?? 'Invalid email or password');
+      if (err.response?.data?.error === 'EMAIL_NOT_VERIFIED') {
+        setUnverified(true);
+        setError(err.response?.data?.message ?? 'Please verify your email first');
+      } else {
+        setError(err.response?.data?.error ?? 'Invalid email or password');
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const resend = async () => {
+    setResendState('sending');
+    try {
+      await api.post('/api/auth/resend-activation', { email });
+      setResendState('sent');
+    } catch (err: any) {
+      setResendState('idle');
+      setError(err.response?.data?.error ?? 'Something went wrong');
     }
   };
 
@@ -54,6 +74,20 @@ export default function LoginPage() {
             required
           />
           {error && <p className="text-red-400 text-sm">{error}</p>}
+          {unverified && (
+            resendState === 'sent' ? (
+              <p className="text-orange-200 text-sm">Sent again — check your inbox.</p>
+            ) : (
+              <button
+                type="button"
+                onClick={resend}
+                disabled={resendState === 'sending'}
+                className="text-brand-400 hover:text-brand-300 text-sm text-left disabled:opacity-50"
+              >
+                {resendState === 'sending' ? 'Sending…' : 'Resend activation email'}
+              </button>
+            )
+          )}
           <Button type="submit" loading={loading} className="mt-2">
             Log in
           </Button>

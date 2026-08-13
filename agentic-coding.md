@@ -695,6 +695,124 @@ push.
 
 ---
 
+## Phase 11 — Staging a Settlement That Fails, and Making It Deterministic
+
+**Date:** 2026-08-12
+**Executed by:** Main agent, inline (no subagents)
+
+### Why no subagents here
+
+One dependency chain, start to finish: work out how a bid can be authenticated
+at all, place the bids, predict what settlement would do with them, and only
+then change settlement. Every step's output was the next step's input, so there
+was nothing that could have run in parallel.
+
+### Part 1 — the Wednesday cron finally fired on its own
+
+`createWeeklyContracts` produced 25 contracts at **2026-08-12 01:00 UTC**
+without being invoked by hand, closing the oldest open item in this log
+(carried since Phase 9). Auctions close 2026-08-14 01:00 UTC.
+
+Worth noting it fired at 01:00, not the 02:00 that Phases 9 and 10 both
+recorded as "next chance" — commit 00b68bc had already moved the schedule so
+that "Wednesday at 03:00" stays true in summer, and neither phase's note was
+updated to match.
+
+### Part 2 — 30 bids, with no password for any of the bidders
+
+Phase 10's 10 disposable users were created by writing a bcrypt hash directly
+into the production DB, and that password was never recorded. There is no admin
+endpoint, and registration cannot help: activation needs a Resend email that
+cannot reach 10 fake mailboxes.
+
+Rather than read `JWT_SECRET` out of Railway and onto a laptop, the script ran
+**inside the container**, minted a token per user with `fast-jwt` (already there
+via `@fastify/jwt`) from the container's own env, and POSTed to the real
+`POST /api/auctions/:id/bid` on `127.0.0.1`. The signing secret never left
+production or entered a transcript. Only `sub` is read from the token, so no
+email or password was needed for any of it.
+
+30 bids, 3 per user, 3–37 credits, across 9 of the 25 auctions — 4 contested
+(5–6 bidders for 5 coupons) and 5 thin, one contested auction per league.
+Degerfors IF `DDD` deliberately carries **two 11-credit bids on the 5th/6th
+coupon boundary**, so tie-breaking-by-`createdAt` decides an actual coupon for
+the first time.
+
+`Bid` is unique on `(auctionId, userId)`, so 30 bids means 30 distinct
+user/auction pairs, and the script skipped rather than silently overwrote where
+a bid already existed. Read back through the **public** API afterwards, per
+Phase 9's lesson: 32 bids over 11 auctions, 14 empty — 30 new plus the 2
+pre-existing human bids, which were left alone.
+
+### Part 3 — draining six users so that settlement actually fails
+
+The insufficient-credits skip had still never fired in production. Six of the
+ten users were dropped to **22–30 credits** against bids of 3–37.
+
+Targets were picked so that every bid either always clears or always fails
+regardless of the order auctions settle in — which mattered, because at that
+point settlement order was arbitrary (Part 4). Predicted outcome, computed from
+the real function before any balance was touched: **17 coupons assigned, 13
+bids skipped**, with `u5` — the loser of the deliberate 11/11 tie — rescued by
+pass-down. Original balances were recorded so the drain is one command to undo.
+
+### Part 4 — settlement was non-deterministic, and now is not
+
+Found while predicting Part 3 rather than by looking for it. `closeExpiredAuctions`
+fetched expiring auctions with **no `orderBy`** and then debited credits auction
+by auction. Because one balance backs a bid on every auction at once — the bid
+endpoint can only check affordability one bid at a time — *which* of a player's
+bids survived was decided by whatever order Postgres returned rows in. The same
+pool could settle two different ways on two runs.
+
+Affordability is now resolved across every closing auction in a single ordered
+pass, **highest bid first**: a player short of credits spends them on the
+contract they bid most for and forfeits the cheaper ones. Entitlement is
+unchanged — top bids still win each contract's coupons, ties still broken by who
+bid first — and an uncoverable bid still passes its coupon to the next bidder
+down. Since both rules sort the same way, the whole thing collapsed into one
+pass, extracted to `backend/src/lib/settlement.ts` as a pure function for the
+same reason `findPatternWindow` lives there.
+
+The debit also became a guarded `updateMany` rather than a bare `decrement`,
+since the plan is computed from balances read before the writes begin and no
+balance may go negative on a stale read.
+
+Merged as PR #3 (`8234b41`) and auto-deployed **2026-08-12 12:57 UTC**, so the
+2026-08-14 close will be the first settlement to run under it.
+
+### Key decisions
+
+- **Highest bid first, not earliest.** Earliest-bid-first was implemented and
+  tested first, then rejected on product grounds: it means an early casual
+  10-credit bid beats a later deliberate 25-credit one, so the player loses the
+  contract they actually wanted. Age survives only as the tie-break between
+  equal amounts.
+- **The signing secret stays in production.** Reading it out was the easier
+  path and was deliberately not taken.
+- **`u4` is the discriminating case.** On 30 credits it holds Degerfors 11
+  (earliest), Husqvarna 14, Sandviken 25 (last and largest) — and 11 + 14 = 25
+  exactly, so both the old and new rules cost it the same 25 and differ *only*
+  in which coupons it ends up owning. Under the new rule it must own Sandviken
+  alone. That makes Friday's close a readable test of the rule itself, not just
+  of the skip path.
+- **No test runner was added.** 29 checks run as `npm run build` plus a plain
+  `node` driver over `dist/`, asserting by `JSON.stringify`. Adding jest to a
+  project that has never had it was not in scope for a settlement fix.
+
+### Still open
+
+- **The new settlement rule has never actually settled anything.** It is live
+  as of 2026-08-12 12:57 UTC but verified only against the pure function. Its
+  first real run is the 2026-08-14 01:00 UTC close, where `u4` owning Sandviken
+  W alone — rather than Degerfors + Husqvarna — is the evidence it behaved.
+- **The 29-check harness lives in `/tmp`, not the repo.** Offered as a follow-up
+  with an `npm test` script; not requested yet.
+- **The six drained balances need restoring** if this user pool is reused for
+  anything else. Originals: u0 942, u1 1000, u4 951, u6 226, u7 1000, u8 142.
+
+---
+
 ## Phase Status
 
 | Phase | Description | Status |
@@ -710,20 +828,22 @@ push.
 | 8 | Repair & live deployment | Done 2026-08-05 |
 | 9 | Closing the game loop | Done 2026-08-06 |
 | 10 | Auction dry-run & dashboard visibility fixes | Done 2026-08-06 |
+| 11 | Staged failing settlement; deterministic settlement rule | Done 2026-08-12 |
 
 ### Known open items
 
-- **`createWeeklyContracts` has never run on its scheduled cron.** Bidding,
-  auction close and payout are now verified end to end against real results
-  in production (Phase 10), but only via on-demand invocation, not the
-  `0 2 * * 3` trigger itself. First natural chance: Wednesday 2026-08-12,
-  02:00 UTC.
+- **The deterministic settlement rule has not yet settled a real auction.**
+  Live since 2026-08-12 12:57 UTC (PR #3), but verified only against the pure
+  function — its first production run is the 2026-08-14 close. See Phase 11,
+  Part 4.
 - **10 disposable test users and 2 prematurely-closed contracts are still
-  live in production**, left over from Phase 10's dry run. Cleanup was
-  offered and not yet requested — see Phase 10, "Still open."
-- **The insufficient-credits-at-settlement skip has never actually fired in
-  production.** `closeExpiredAuctions` has now settled real auctions twice
-  (Phase 10), but no bidder has yet been unable to cover a bid at close.
+  live in production**, left over from Phase 10's dry run, and six of those
+  users now carry deliberately drained balances from Phase 11. Cleanup was
+  offered and not yet requested — see Phase 10 and Phase 11, "Still open."
+- **The insufficient-credits-at-settlement skip has still not fired, but is
+  now staged to.** Six drained users hold 13 bids they cannot cover at the
+  2026-08-14 01:00 UTC close (Phase 11, Part 3). Until that runs, the skip
+  branch remains unexercised in production.
 - **No local development database exists.** `backend/.env` points at
   `localhost:5432`, but that Postgres instance has no `football_contracts`
   database or `postgres` role — confirmed directly in Phase 10. Every
