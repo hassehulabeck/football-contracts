@@ -12,6 +12,8 @@ export default function RegisterPage() {
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [resendState, setResendState] = useState<'idle' | 'sending' | 'sent'>('idle');
+  const [resendError, setResendError] = useState('');
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,6 +29,18 @@ export default function RegisterPage() {
     }
   };
 
+  const resend = async () => {
+    setResendError('');
+    setResendState('sending');
+    try {
+      await api.post('/api/auth/resend-activation', { email });
+      setResendState('sent');
+    } catch (err: any) {
+      setResendState('idle');
+      setResendError(err.response?.data?.error ?? 'Something went wrong');
+    }
+  };
+
   if (done) {
     return (
       <div className="flex flex-col items-center justify-center flex-1 px-4 py-20">
@@ -35,6 +49,15 @@ export default function RegisterPage() {
           <p className="text-orange-200">
             We sent an activation link to <strong>{email}</strong>. Click it to activate your account and start playing.
           </p>
+
+          {resendState === 'sent' ? (
+            <p className="text-orange-200 mt-6">Sent again — check your inbox.</p>
+          ) : (
+            <Button variant="ghost" className="mt-6" loading={resendState === 'sending'} onClick={resend}>
+              Didn&apos;t get it? Resend
+            </Button>
+          )}
+          {resendError && <p className="text-red-400 text-sm mt-3">{resendError}</p>}
         </div>
       </div>
     );

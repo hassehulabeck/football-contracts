@@ -51,6 +51,9 @@ model User {
   passwordHash    String
   emailVerified   Boolean   @default(false)
   activationToken String?   @unique
+  // Null until the first activation email goes out. Lets the resend route
+  // throttle by elapsed time instead of tracking a separate counter.
+  activationTokenSentAt DateTime?
   credits         Int       @default(1000)
   // The public identity, shown on the leaderboard in place of the email.
   //
