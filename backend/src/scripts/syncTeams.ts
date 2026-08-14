@@ -39,6 +39,7 @@ const LEAGUE_ENUM_TO_ID: Record<League, number> = {
   SUPERETTAN: LEAGUE_IDS.SUPERETTAN,
   DAMALLSVENSKAN: LEAGUE_IDS.DAMALLSVENSKAN,
   ELITETTAN: LEAGUE_IDS.ELITETTAN,
+  CHAMPIONSHIP: LEAGUE_IDS.CHAMPIONSHIP,
 };
 
 // Prevents cross-gender name collisions during the rescue pass.
@@ -47,6 +48,7 @@ const LEAGUE_GENDER: Record<League, 'M' | 'W'> = {
   SUPERETTAN: 'M',
   DAMALLSVENSKAN: 'W',
   ELITETTAN: 'W',
+  CHAMPIONSHIP: 'M',
 };
 
 type ApiTeam = { externalId: number; name: string; league: League };
@@ -206,7 +208,7 @@ async function main(): Promise<void> {
   // ── Pass 4: prune rows for teams no longer in any tracked league ──────────
   // Left in place, these get picked by createContracts and produce contracts that
   // can never be fulfilled, since no fixtures will ever be ingested for them.
-  console.log('Pass 4 — pruning teams no longer in the four leagues');
+  console.log('Pass 4 — pruning teams no longer in the tracked leagues');
   for (const db of dbTeams) {
     if (claimedDb.has(db.id)) continue;
 

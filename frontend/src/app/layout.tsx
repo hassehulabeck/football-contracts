@@ -6,7 +6,7 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'Football Contracts',
-  description: 'Bid on Swedish football team performance contracts',
+  description: 'Bid on football team performance contracts',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

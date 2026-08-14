@@ -48,6 +48,35 @@ const teams: Array<{ externalId: number; name: string; league: League }> = [
   { externalId: 1306, name: 'Helsingborgs IF Women', league: 'ELITETTAN' },
   { externalId: 1307, name: 'Sunnanå SK', league: 'ELITETTAN' },
   { externalId: 1308, name: 'Lidköpings FK', league: 'ELITETTAN' },
+
+  // Championship — English second division. Names match the 2026-27 season
+  // (verified via GET /leagues?id=40 and a real sync run on 2026-08-14);
+  // externalIds are placeholders like the rest, reconciled by syncTeams's
+  // Pass 2 rescue on first real sync.
+  { externalId: 1401, name: 'Watford', league: 'CHAMPIONSHIP' },
+  { externalId: 1402, name: 'Wolves', league: 'CHAMPIONSHIP' },
+  { externalId: 1403, name: 'Southampton', league: 'CHAMPIONSHIP' },
+  { externalId: 1404, name: 'Cardiff', league: 'CHAMPIONSHIP' },
+  { externalId: 1405, name: 'Burnley', league: 'CHAMPIONSHIP' },
+  { externalId: 1406, name: 'West Ham', league: 'CHAMPIONSHIP' },
+  { externalId: 1407, name: 'Birmingham', league: 'CHAMPIONSHIP' },
+  { externalId: 1408, name: 'Bristol City', league: 'CHAMPIONSHIP' },
+  { externalId: 1409, name: 'Millwall', league: 'CHAMPIONSHIP' },
+  { externalId: 1410, name: 'Preston', league: 'CHAMPIONSHIP' },
+  { externalId: 1411, name: 'West Brom', league: 'CHAMPIONSHIP' },
+  { externalId: 1412, name: 'Sheffield Utd', league: 'CHAMPIONSHIP' },
+  { externalId: 1413, name: 'Blackburn', league: 'CHAMPIONSHIP' },
+  { externalId: 1414, name: 'Bolton', league: 'CHAMPIONSHIP' },
+  { externalId: 1415, name: 'Derby', league: 'CHAMPIONSHIP' },
+  { externalId: 1416, name: 'Middlesbrough', league: 'CHAMPIONSHIP' },
+  { externalId: 1417, name: 'Norwich', league: 'CHAMPIONSHIP' },
+  { externalId: 1418, name: 'QPR', league: 'CHAMPIONSHIP' },
+  { externalId: 1419, name: 'Stoke City', league: 'CHAMPIONSHIP' },
+  { externalId: 1420, name: 'Swansea', league: 'CHAMPIONSHIP' },
+  { externalId: 1421, name: 'Charlton', league: 'CHAMPIONSHIP' },
+  { externalId: 1422, name: 'Portsmouth', league: 'CHAMPIONSHIP' },
+  { externalId: 1423, name: 'Lincoln', league: 'CHAMPIONSHIP' },
+  { externalId: 1424, name: 'Wrexham', league: 'CHAMPIONSHIP' },
 ];
 
 async function main() {
@@ -58,7 +87,7 @@ async function main() {
       create: team,
     });
   }
-  console.log(`Seeded ${teams.length} teams across 4 leagues`);
+  console.log(`Seeded ${teams.length} teams across 5 leagues`);
 }
 
 main().catch(console.error).finally(() => prisma.$disconnect());

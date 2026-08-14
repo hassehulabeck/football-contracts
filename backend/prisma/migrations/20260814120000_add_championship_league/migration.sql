@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "League" ADD VALUE 'CHAMPIONSHIP';

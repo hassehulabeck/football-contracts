@@ -5,15 +5,18 @@ const client = axios.create({
   headers: { 'x-apisports-key': process.env.FOOTBALL_API_KEY! },
 });
 
-// Swedish league IDs on api-football.com.
-// Verified against GET /leagues?country=Sweden on 2026-08-05.
+// League IDs on api-football.com.
+// Swedish ones verified against GET /leagues?country=Sweden on 2026-08-05.
 // Note: 115 is Svenska Cupen and 116 is not a Swedish competition — both were
 // wrong in the original scaffold and silently corrupted the first team sync.
+// CHAMPIONSHIP (English second tier) added 2026-08-14, verified against
+// GET /leagues?country=England.
 export const LEAGUE_IDS = {
   ALLSVENSKAN: 113,
   SUPERETTAN: 114,
   DAMALLSVENSKAN: 549,
   ELITETTAN: 736,
+  CHAMPIONSHIP: 40,
 } as const;
 
 export async function fetchTeams(leagueId: number, season: number) {

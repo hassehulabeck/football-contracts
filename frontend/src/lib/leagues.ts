@@ -68,6 +68,17 @@ export const LEAGUES: Record<League, LeagueStyle> = {
     filterActive:
       'bg-league-elitettan/20 border-league-elitettan text-league-elitettan-accent',
   },
+  CHAMPIONSHIP: {
+    label: 'Championship',
+    short: 'Champ.',
+    text: 'text-league-championship-accent',
+    badge:
+      'bg-league-championship/15 border-league-championship/40 text-league-championship-accent',
+    stripe: 'border-l-league-championship',
+    dot: 'bg-league-championship-accent',
+    filterActive:
+      'bg-league-championship/20 border-league-championship text-league-championship-accent',
+  },
 };
 
 /**
@@ -75,21 +86,23 @@ export const LEAGUES: Record<League, LeagueStyle> = {
  *
  * Keyed by the same league IDs the backend syncs with (`LEAGUE_IDS` in
  * `backend/src/lib/footballApi.ts`) — hardcoded here rather than fetched,
- * because four static URLs are not worth an endpoint or a schema column.
+ * because a handful of static URLs are not worth an endpoint or a schema column.
  */
 export const LEAGUE_LOGO: Record<League, string> = {
   ALLSVENSKAN: 'https://media.api-sports.io/football/leagues/113.png',
   SUPERETTAN: 'https://media.api-sports.io/football/leagues/114.png',
   DAMALLSVENSKAN: 'https://media.api-sports.io/football/leagues/549.png',
   ELITETTAN: 'https://media.api-sports.io/football/leagues/736.png',
+  CHAMPIONSHIP: 'https://media.api-sports.io/football/leagues/40.png',
 };
 
-/** Display order — men's top flight first, then the tiers below it. */
+/** Display order — Swedish men's, then women's, tiers first, then the English addition. */
 export const LEAGUE_ORDER: League[] = [
   'ALLSVENSKAN',
   'SUPERETTAN',
   'DAMALLSVENSKAN',
   'ELITETTAN',
+  'CHAMPIONSHIP',
 ];
 
 /**
