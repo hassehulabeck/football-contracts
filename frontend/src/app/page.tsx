@@ -5,7 +5,7 @@ const HOW_IT_WORKS = [
   {
     step: '1',
     title: 'Pick a contract',
-    body: 'Every Wednesday 25 new contracts appear — each tied to a Swedish team and a performance pattern like WWW (three wins in a row) or LDW.',
+    body: 'Every Wednesday 25 new contracts appear — each tied to a team and a performance pattern like WWW (three wins in a row) or LDW.',
   },
   {
     step: '2',
@@ -33,7 +33,7 @@ export default function Home() {
       {/* Hero */}
       <section className="px-6 py-24 text-center max-w-3xl mx-auto">
         <p className="text-orange-400 text-xs font-bold uppercase tracking-widest mb-4">
-          Swedish football · April – November
+          Swedish &amp; English football · year-round
         </p>
         <h1 className="text-6xl sm:text-7xl text-brand-500 mb-6 leading-none">
           Football<br />Contracts
@@ -42,8 +42,9 @@ export default function Home() {
           Bid on team performance contracts across{' '}
           <span className={`font-semibold ${LEAGUES.ALLSVENSKAN.text}`}>Allsvenskan</span>,{' '}
           <span className={`font-semibold ${LEAGUES.SUPERETTAN.text}`}>Superettan</span>,{' '}
-          <span className={`font-semibold ${LEAGUES.DAMALLSVENSKAN.text}`}>Damallsvenskan</span> and{' '}
-          <span className={`font-semibold ${LEAGUES.ELITETTAN.text}`}>Elitettan</span>.
+          <span className={`font-semibold ${LEAGUES.DAMALLSVENSKAN.text}`}>Damallsvenskan</span>,{' '}
+          <span className={`font-semibold ${LEAGUES.ELITETTAN.text}`}>Elitettan</span> and the{' '}
+          <span className={`font-semibold ${LEAGUES.CHAMPIONSHIP.text}`}>Championship</span>.
           Start with 1&nbsp;000 credits. The sharpest bidder wins.
         </p>
         <div className="flex gap-4 justify-center">

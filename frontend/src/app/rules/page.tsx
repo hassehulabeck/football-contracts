@@ -29,7 +29,7 @@ export default function RulesPage() {
       <Section n="1" title="The idea">
         <p>
           A <strong className="text-orange-100">contract</strong> is a prediction about a
-          Swedish football team — say, that Elfsborg wins three matches in a row. You do not
+          football team — say, that Elfsborg wins three matches in a row. You do not
           bid on the contract itself. You bid on a{' '}
           <strong className="text-orange-100">coupon</strong>, one of a limited number
           attached to that contract.
@@ -54,10 +54,11 @@ export default function RulesPage() {
         </p>
       </Section>
 
-      <Section n="3" title="The four leagues">
+      <Section n="3" title="The five leagues">
         <p>
-          Contracts are drawn from four Swedish leagues. Each has its own colour throughout
-          the site — you will see it as a stripe down the left edge of every table row.
+          Contracts are drawn from five leagues across Sweden and England. Each has its own
+          colour throughout the site — you will see it as a stripe down the left edge of every
+          table row.
         </p>
         <div className="grid grid-cols-2 gap-3 mt-4">
           {LEAGUE_ORDER.map((key) => (
@@ -75,7 +76,7 @@ export default function RulesPage() {
         <p>
           Every <strong className="text-orange-100">Wednesday at 03:00 Swedish time</strong> the system
           creates <strong className="text-orange-100">25 new contracts</strong>. Each one picks
-          a team at random from all four leagues, and a result pattern at random from these
+          a team at random from all five leagues, and a result pattern at random from these
           five:
         </p>
         <div className="rounded-xl border border-white/10 overflow-hidden mt-4">
@@ -192,7 +193,7 @@ export default function RulesPage() {
         <p>
           Consecutive means{' '}
           <strong className="text-orange-100">by the date the match was played</strong>, not by
-          league round. Swedish fixtures get moved constantly: a postponed round-19 match can
+          league round. Fixtures get moved constantly: a postponed round-19 match can
           be played while the league is on round 7. We order by the actual playing date, so
           that rescheduled match sits where it really happened.
         </p>

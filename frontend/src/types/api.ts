@@ -1,4 +1,4 @@
-export type League = 'ALLSVENSKAN' | 'DAMALLSVENSKAN' | 'SUPERETTAN' | 'ELITETTAN';
+export type League = 'ALLSVENSKAN' | 'DAMALLSVENSKAN' | 'SUPERETTAN' | 'ELITETTAN' | 'CHAMPIONSHIP';
 export type ContractPattern = 'WWW' | 'DDD' | 'LLL' | 'WDL' | 'LDW';
 export type ContractStatus = 'PENDING' | 'ACTIVE' | 'CLOSED' | 'FULFILLED' | 'FAILED';
 

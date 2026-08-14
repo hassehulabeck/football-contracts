@@ -2,7 +2,7 @@
  * Team names arrive from api-football.com with a " W" suffix on every
  * Damallsvenskan and Elitettan club — "Häcken W", "Örebro SK W", "Häcken II W".
  * All 28 women's clubs carry it and no men's club does. The league badge and
- * row stripe already say which league a team is in, and the four leagues are
+ * row stripe already say which league a team is in, and every league is
  * colour-coded, so the suffix repeats what the badge next to it just said.
  *
  * " Women" is stripped too. No club currently uses that form — every row in
