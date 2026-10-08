@@ -17,12 +17,36 @@ enum League {
   CHAMPIONSHIP
 }
 
+// Every ordered combination of three results. The first five were the original
+// fixed set; the rest were added 2026-10-08 when patterns became fully random.
 enum ContractPattern {
   WWW
   DDD
   LLL
   WDL
   LDW
+  WWD
+  WWL
+  WDW
+  WDD
+  WLW
+  WLD
+  WLL
+  DWW
+  DWD
+  DWL
+  DDW
+  DDL
+  DLW
+  DLD
+  DLL
+  LWW
+  LWD
+  LWL
+  LDD
+  LDL
+  LLW
+  LLD
 }
 
 // PENDING  → contract exists, auction not yet started

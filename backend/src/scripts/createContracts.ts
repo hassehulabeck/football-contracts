@@ -6,7 +6,7 @@
  * auction so a full bid -> close -> payout cycle can be watched in one sitting.
  *
  * Flags:
- *   --count=25       how many contracts (default 25, the weekly batch size)
+ *   --count=35       how many contracts (default 35, the weekly batch size)
  *   --hours=48       auction duration in hours (default 48)
  *   --dry-run        report what would be created without writing
  */

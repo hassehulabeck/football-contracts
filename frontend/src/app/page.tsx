@@ -1,11 +1,12 @@
 import Link from 'next/link';
 import { LEAGUES } from '@/lib/leagues';
+import { patternLabel } from '@/lib/patterns';
 
 const HOW_IT_WORKS = [
   {
     step: '1',
     title: 'Pick a contract',
-    body: 'Every Wednesday 25 new contracts appear — each tied to a team and a performance pattern like WWW (three wins in a row) or LDW.',
+    body: 'Every Wednesday 35 new contracts appear — each tied to a team and a pattern of three results, like WWW (three wins in a row) or LDW.',
   },
   {
     step: '2',
@@ -19,13 +20,8 @@ const HOW_IT_WORKS = [
   },
 ];
 
-const PATTERNS = [
-  { code: 'WWW', label: 'Three wins' },
-  { code: 'DDD', label: 'Three draws' },
-  { code: 'LLL', label: 'Three losses' },
-  { code: 'WDL', label: 'Win → Draw → Loss' },
-  { code: 'LDW', label: 'Loss → Draw → Win' },
-];
+// A sample only — a contract can carry any of the 27 three-result patterns.
+const EXAMPLE_PATTERNS = ['WWW', 'DDL', 'LWL', 'WDW', 'LLD'];
 
 export default function Home() {
   return (
@@ -91,16 +87,16 @@ export default function Home() {
       <section className="border-t border-white/10 px-6 py-16 max-w-4xl mx-auto">
         <h2 className="text-3xl text-orange-200 mb-2 text-center">Contract patterns</h2>
         <p className="text-white/40 text-sm text-center mb-8">
-          A contract stays open until the pattern appears anywhere in the team's results for the rest of the season — or until the season ends.
+          Any three results in a row, in order — wins, draws and losses in every mix. A contract stays open until the pattern appears anywhere in the team's results for the rest of the season — or until the season ends. Some examples:
         </p>
         <div className="flex flex-wrap gap-3 justify-center">
-          {PATTERNS.map(({ code, label }) => (
+          {EXAMPLE_PATTERNS.map((code) => (
             <div
               key={code}
               className="bg-white/5 border border-white/10 rounded-xl px-5 py-3 flex items-center gap-3"
             >
               <span className="font-mono font-black text-brand-400 text-lg">{code}</span>
-              <span className="text-white/50 text-sm">{label}</span>
+              <span className="text-white/50 text-sm">{patternLabel(code)}</span>
             </div>
           ))}
         </div>

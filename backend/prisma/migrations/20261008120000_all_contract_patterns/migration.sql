@@ -1,0 +1,23 @@
+-- Contracts now draw any of the 27 three-result patterns, not just the original five.
+ALTER TYPE "ContractPattern" ADD VALUE 'WWD';
+ALTER TYPE "ContractPattern" ADD VALUE 'WWL';
+ALTER TYPE "ContractPattern" ADD VALUE 'WDW';
+ALTER TYPE "ContractPattern" ADD VALUE 'WDD';
+ALTER TYPE "ContractPattern" ADD VALUE 'WLW';
+ALTER TYPE "ContractPattern" ADD VALUE 'WLD';
+ALTER TYPE "ContractPattern" ADD VALUE 'WLL';
+ALTER TYPE "ContractPattern" ADD VALUE 'DWW';
+ALTER TYPE "ContractPattern" ADD VALUE 'DWD';
+ALTER TYPE "ContractPattern" ADD VALUE 'DWL';
+ALTER TYPE "ContractPattern" ADD VALUE 'DDW';
+ALTER TYPE "ContractPattern" ADD VALUE 'DDL';
+ALTER TYPE "ContractPattern" ADD VALUE 'DLW';
+ALTER TYPE "ContractPattern" ADD VALUE 'DLD';
+ALTER TYPE "ContractPattern" ADD VALUE 'DLL';
+ALTER TYPE "ContractPattern" ADD VALUE 'LWW';
+ALTER TYPE "ContractPattern" ADD VALUE 'LWD';
+ALTER TYPE "ContractPattern" ADD VALUE 'LWL';
+ALTER TYPE "ContractPattern" ADD VALUE 'LDD';
+ALTER TYPE "ContractPattern" ADD VALUE 'LDL';
+ALTER TYPE "ContractPattern" ADD VALUE 'LLW';
+ALTER TYPE "ContractPattern" ADD VALUE 'LLD';

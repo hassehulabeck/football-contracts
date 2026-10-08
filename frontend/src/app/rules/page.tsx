@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { LEAGUES, LEAGUE_ORDER } from '@/lib/leagues';
 import { LeagueBadge } from '@/components/LeagueBadge';
+import { patternDescription, patternLabel } from '@/lib/patterns';
 
 export const metadata: Metadata = {
   title: 'Rules — Football Contracts',
@@ -9,13 +10,8 @@ export const metadata: Metadata = {
     'How Football Contracts works: contracts, silent auctions, coupons, fulfilment and payouts.',
 };
 
-const PATTERNS = [
-  { code: 'WWW', label: 'Three wins', detail: 'Win, win, win' },
-  { code: 'DDD', label: 'Three draws', detail: 'Draw, draw, draw' },
-  { code: 'LLL', label: 'Three losses', detail: 'Loss, loss, loss' },
-  { code: 'WDL', label: 'Win → Draw → Loss', detail: 'In exactly that order' },
-  { code: 'LDW', label: 'Loss → Draw → Win', detail: 'In exactly that order' },
-];
+// The four weighted-up patterns first, then a sample of the rarer 23.
+const EXAMPLE_PATTERNS = ['WWW', 'LLL', 'WDL', 'LDW', 'DDD', 'DLD'];
 
 export default function RulesPage() {
   return (
@@ -75,19 +71,22 @@ export default function RulesPage() {
       <Section n="4" title="How contracts appear">
         <p>
           Every <strong className="text-orange-100">Wednesday at 03:00 Swedish time</strong> the system
-          creates <strong className="text-orange-100">25 new contracts</strong>. Each one picks
-          a team at random from all five leagues, and a result pattern at random from these
-          five:
+          creates <strong className="text-orange-100">35 new contracts</strong>. Each one picks
+          a team at random from all five leagues, and a pattern of three results at random —
+          any mix of wins, draws and losses, so there are{' '}
+          <strong className="text-orange-100">27 possible patterns</strong>. They are not
+          equally likely: WWW and LLL come up most often, WDL and LDW nearly as often, and
+          every other pattern is rarer. A few of them:
         </p>
         <div className="rounded-xl border border-white/10 overflow-hidden mt-4">
           <table className="w-full text-sm">
             <tbody>
-              {PATTERNS.map(({ code, label, detail }) => (
+              {EXAMPLE_PATTERNS.map((code) => (
                 <tr key={code} className="border-b border-white/5 last:border-0">
                   <td className="px-4 py-3 font-mono font-black text-brand-400 w-20">{code}</td>
-                  <td className="px-4 py-3 text-orange-100">{label}</td>
+                  <td className="px-4 py-3 text-orange-100">{patternLabel(code)}</td>
                   <td className="px-4 py-3 text-white/40 text-xs hidden sm:table-cell">
-                    {detail}
+                    {patternDescription(code)}
                   </td>
                 </tr>
               ))}

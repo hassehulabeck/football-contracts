@@ -1,5 +1,7 @@
 export type League = 'ALLSVENSKAN' | 'DAMALLSVENSKAN' | 'SUPERETTAN' | 'ELITETTAN' | 'CHAMPIONSHIP';
-export type ContractPattern = 'WWW' | 'DDD' | 'LLL' | 'WDL' | 'LDW';
+type Result = 'W' | 'D' | 'L';
+/** Any three results in order — all 27 combinations occur. */
+export type ContractPattern = `${Result}${Result}${Result}`;
 export type ContractStatus = 'PENDING' | 'ACTIVE' | 'CLOSED' | 'FULFILLED' | 'FAILED';
 
 /**
