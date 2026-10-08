@@ -11,6 +11,8 @@ interface AuthUser {
   /** Null until the player picks one. UsernameGate forces that to happen. */
   username: string | null;
   usernameChangedAt: string | null;
+  /** Shows the Admin link. Cosmetic — every admin request is re-checked server-side. */
+  isAdmin: boolean;
 }
 
 interface AuthContextValue {
@@ -43,6 +45,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // "not set" and bounce the player into the gate on every page.
         username: res.data.username ?? null,
         usernameChangedAt: res.data.usernameChangedAt ?? null,
+        isAdmin: res.data.isAdmin ?? false,
       }))
       .catch(() => localStorage.removeItem('fc_token'))
       .finally(() => setLoading(false));
@@ -58,6 +61,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       ...user,
       username: user.username ?? null,
       usernameChangedAt: user.usernameChangedAt ?? null,
+      isAdmin: user.isAdmin ?? false,
     });
   };
 

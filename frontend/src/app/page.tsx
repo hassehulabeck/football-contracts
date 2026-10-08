@@ -6,7 +6,7 @@ const HOW_IT_WORKS = [
   {
     step: '1',
     title: 'Pick a contract',
-    body: 'Every Wednesday 35 new contracts appear — each tied to a team and a pattern of three results, like WWW (three wins in a row) or LDW.',
+    body: 'Every Wednesday a fresh batch of contracts appears — each tied to a team and a pattern of three results, like WWW (three wins in a row) or LDW.',
   },
   {
     step: '2',

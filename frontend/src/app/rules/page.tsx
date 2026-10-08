@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { LEAGUES, LEAGUE_ORDER } from '@/lib/leagues';
 import { LeagueBadge } from '@/components/LeagueBadge';
 import { patternDescription, patternLabel } from '@/lib/patterns';
+import { BatchSettingsTable, CouponRuleText } from '@/components/BatchSettings';
 
 export const metadata: Metadata = {
   title: 'Rules — Football Contracts',
@@ -71,8 +72,12 @@ export default function RulesPage() {
       <Section n="4" title="How contracts appear">
         <p>
           Every <strong className="text-orange-100">Wednesday at 03:00 Swedish time</strong> the system
-          creates <strong className="text-orange-100">35 new contracts</strong>. Each one picks
-          a team at random from all five leagues, and a pattern of three results at random —
+          creates a fresh batch of contracts — a set number per league, each for a different
+          team. These are the current numbers:
+        </p>
+        <BatchSettingsTable />
+        <p className="mt-4">
+          Each contract gets a pattern of three results at random —
           any mix of wins, draws and losses, so there are{' '}
           <strong className="text-orange-100">27 possible patterns</strong>. They are not
           equally likely: WWW and LLL come up most often, WDL and LDW nearly as often, and
@@ -102,12 +107,9 @@ export default function RulesPage() {
       <Section n="5" title="Coupons">
         <p>
           Each contract carries a fixed number of coupons — that is the supply everyone is
-          bidding for. Right now it is{' '}
-          <strong className="text-orange-100">5 coupons per contract</strong>. Once the game
-          passes 50 activated players, it scales to{' '}
-          <strong className="text-orange-100">10% of the player base</strong>, so the supply
-          grows with the competition.
+          bidding for.
         </p>
+        <CouponRuleText />
       </Section>
 
       <Section n="6" title="The auction">

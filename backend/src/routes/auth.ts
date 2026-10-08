@@ -123,6 +123,7 @@ export async function authRoutes(server: FastifyInstance) {
         email: user.email,
         credits: user.credits,
         username: user.username,
+        isAdmin: user.isAdmin,
       },
     });
   });

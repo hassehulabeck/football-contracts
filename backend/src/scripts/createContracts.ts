@@ -6,7 +6,8 @@
  * auction so a full bid -> close -> payout cycle can be watched in one sitting.
  *
  * Flags:
- *   --count=35       how many contracts (default 35, the weekly batch size)
+ *   --per-league=2   contracts per enabled league (default: each league's
+ *                    contractsPerWeek from LeagueConfig)
  *   --hours=48       auction duration in hours (default 48)
  *   --dry-run        report what would be created without writing
  */
@@ -26,13 +27,13 @@ const numArg = (name: string) => {
 };
 
 async function main(): Promise<void> {
-  const count = numArg('count');
+  const perLeague = numArg('per-league');
   const auctionHours = numArg('hours');
 
   console.log(`\n=== Football Contracts — createContracts${DRY_RUN ? ' [DRY RUN]' : ''} ===\n`);
 
   const res = await createWeeklyContracts({
-    count,
+    perLeague,
     auctionHours,
     dryRun: DRY_RUN,
     log: (msg) => console.log(`  ${msg}`),
@@ -41,7 +42,9 @@ async function main(): Promise<void> {
   const open = await prisma.contract.count({ where: { status: 'ACTIVE' } });
   console.log('\n=== Summary ===');
   console.log(`  created            ${res.created}`);
-  console.log(`  coupons each       ${res.couponCount}`);
+  for (const l of res.leagues) {
+    console.log(`  ${l.league.padEnd(18)} ${l.created} × ${l.couponCount} coupons`);
+  }
   console.log(`  auction ends       ${res.auctionEnd?.toISOString() ?? '—'}`);
   console.log(`  ACTIVE contracts   ${open}${DRY_RUN ? ' (unchanged)' : ''}`);
   if (DRY_RUN) console.log('\nDry run — no changes were written.');

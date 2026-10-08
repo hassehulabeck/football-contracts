@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
+import { authenticate } from '../lib/guards';
 
 /**
  * 3–20 characters, letters/digits/underscore/hyphen. Deliberately narrow: this
@@ -13,14 +14,6 @@ const usernameSchema = z.object({
 const RENAME_COOLDOWN_MS = 30 * 24 * 60 * 60 * 1000;
 
 export async function userRoutes(server: FastifyInstance) {
-  const authenticate = async (req: any, reply: any) => {
-    try {
-      await req.jwtVerify();
-    } catch {
-      reply.status(401).send({ error: 'Unauthorized' });
-    }
-  };
-
   server.get('/me', { preHandler: authenticate }, async (req, reply) => {
     const userId = (req.user as any).sub as string;
     const user = await server.prisma.user.findUnique({
@@ -34,6 +27,9 @@ export async function userRoutes(server: FastifyInstance) {
         username: true,
         usernameChangedAt: true,
         credits: true,
+        // Shows the Admin link. The server re-checks on every admin request;
+        // this only decides what the navbar renders.
+        isAdmin: true,
         createdAt: true,
         coupons: {
           include: {

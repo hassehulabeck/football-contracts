@@ -1,19 +1,12 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
+import { authenticate } from '../lib/guards';
 
 const bidSchema = z.object({
   amount: z.number().int().positive(),
 });
 
 export async function auctionRoutes(server: FastifyInstance) {
-  const authenticate = async (req: any, reply: any) => {
-    try {
-      await req.jwtVerify();
-    } catch {
-      reply.status(401).send({ error: 'Unauthorized' });
-    }
-  };
-
   // Get auction info (bid count while open; winning bid once settled)
   server.get('/:id', async (req, reply) => {
     const { id } = req.params as { id: string };

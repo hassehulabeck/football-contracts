@@ -10,6 +10,8 @@ import { teamRoutes } from './routes/teams';
 import { auctionRoutes } from './routes/auctions';
 import { userRoutes } from './routes/users';
 import { leaderboardRoutes } from './routes/leaderboard';
+import { leagueRoutes } from './routes/leagues';
+import { adminRoutes } from './routes/admin';
 import { registerJobs } from './jobs';
 
 const server = Fastify({ logger: true });
@@ -59,6 +61,8 @@ async function start() {
   await server.register(auctionRoutes, { prefix: '/api/auctions' });
   await server.register(userRoutes, { prefix: '/api/users' });
   await server.register(leaderboardRoutes, { prefix: '/api/leaderboard' });
+  await server.register(leagueRoutes, { prefix: '/api/leagues' });
+  await server.register(adminRoutes, { prefix: '/api/admin' });
 
   registerJobs();
 
