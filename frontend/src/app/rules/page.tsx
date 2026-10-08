@@ -77,6 +77,13 @@ export default function RulesPage() {
         </p>
         <BatchSettingsTable />
         <p className="mt-4">
+          A team only gets a contract while it can still deliver one: it needs at least{' '}
+          <strong className="text-orange-100">three matches left</strong> this season, the next
+          within three weeks. So a league stops getting contracts in its final weeks and starts
+          again just before the new season kicks off. The Championship keeps going through the
+          Swedish winter.
+        </p>
+        <p className="mt-4">
           Each contract gets a pattern of three results at random —
           any mix of wins, draws and losses, so there are{' '}
           <strong className="text-orange-100">27 possible patterns</strong>. They are not

@@ -54,3 +54,29 @@ export function pickTeams<T>(teams: T[], count: number, random: () => number = M
   }
   return picked;
 }
+
+/** A pattern is three results, so a team with fewer matches left cannot complete one. */
+export const MIN_FIXTURES_LEFT = 3;
+
+/**
+ * How soon a team's next match must be for it to get a contract. Wide enough to
+ * ride out an international break (the one ending 2026-10-08 left 18 days
+ * without a fixture), narrow enough that a winter or summer break — months
+ * long — means no contracts until the new season is about to start.
+ */
+export const MAX_DAYS_TO_NEXT_FIXTURE = 21;
+
+/**
+ * Whether a team can be given a contract this week, judged from its schedule.
+ *
+ * `kickoffs` are the team's scheduled (not postponed or cancelled) fixtures
+ * still to come. Only those before `seasonEnd` count — anything after it is
+ * past the point where checkFulfillment fails the contract.
+ */
+export function isInSeason(kickoffs: Date[], now: Date, seasonEnd: Date): boolean {
+  const left = kickoffs
+    .filter((k) => k > now && k <= seasonEnd)
+    .sort((a, b) => a.getTime() - b.getTime());
+  if (left.length < MIN_FIXTURES_LEFT) return false;
+  return left[0].getTime() - now.getTime() <= MAX_DAYS_TO_NEXT_FIXTURE * 24 * 60 * 60 * 1000;
+}
