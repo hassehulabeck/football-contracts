@@ -14,6 +14,8 @@ interface MyCoupon {
   id: string;
   contractId: string;
   paidOut: boolean;
+  /** Credits the winning bid cost. Optional: an old backend mid-deploy omits it. */
+  pricePaid?: number | null;
   contract: {
     pattern: string;
     status: string;
@@ -171,6 +173,7 @@ export default function DashboardPage() {
                   <th className="px-4 py-3 font-medium">Team</th>
                   <th className="px-4 py-3 font-medium">Pattern</th>
                   <th className="px-4 py-3 font-medium">Status</th>
+                  <th className="px-4 py-3 font-medium tabular">Paid</th>
                   <th className="px-4 py-3 font-medium tabular">Payout</th>
                 </tr>
               </thead>
@@ -195,6 +198,9 @@ export default function DashboardPage() {
                     </td>
                     <td className="px-4 py-3 text-white/50 capitalize">
                       {coupon.contract.status.toLowerCase()}
+                    </td>
+                    <td className="px-4 py-3 tabular text-orange-100">
+                      {coupon.pricePaid != null ? `${coupon.pricePaid.toLocaleString()} cr` : '—'}
                     </td>
                     <td className="px-4 py-3 tabular">
                       {coupon.paidOut ? (
