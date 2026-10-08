@@ -8,7 +8,7 @@
  * Flags:
  *   --rest-of-season  every remaining fixture (default; ignores --days)
  *   --days=30         only the next N days
- *   --season=2026     override the season (defaults to the current year)
+ *   --season=2026     force one season on every league (default: each league's current one)
  *   --dry-run         report what would change without writing
  *
  * Note --days looks *forward* here, unlike ingestMatches where it looks back.
@@ -21,9 +21,9 @@ import { toDateParam } from '../lib/ingestMatches';
 const prisma = new PrismaClient();
 
 const DRY_RUN = process.argv.includes('--dry-run');
-const SEASON = Number(
-  process.argv.find((a) => a.startsWith('--season='))?.split('=')[1] ?? new Date().getUTCFullYear(),
-);
+const SEASON_ARG = process.argv.find((a) => a.startsWith('--season='))?.split('=')[1];
+// Undefined lets each league use its own current season — see lib/season.ts.
+const SEASON = SEASON_ARG === undefined ? undefined : Number(SEASON_ARG);
 const DAYS_ARG = process.argv.find((a) => a.startsWith('--days='))?.split('=')[1];
 const DAYS = DAYS_ARG ? Number(DAYS_ARG) : null;
 
@@ -47,7 +47,7 @@ async function main(): Promise<void> {
 
   const window = DAYS !== null ? `${from} → ${to}` : 'rest of season';
   console.log(
-    `\n=== Football Contracts — ingestFixtures (season ${SEASON}, ${window})${DRY_RUN ? ' [DRY RUN]' : ''} ===\n`,
+    `\n=== Football Contracts — ingestFixtures (season ${SEASON ?? 'current per league'}, ${window})${DRY_RUN ? ' [DRY RUN]' : ''} ===\n`,
   );
   console.log(`Tracking ${teamCount} teams. Fetching upcoming fixtures...`);
 

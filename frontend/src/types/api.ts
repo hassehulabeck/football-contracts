@@ -116,6 +116,12 @@ export interface ContractDetail extends Contract {
   couponsSold: number;
   couponsPaid: number;
   fulfillment: { matches: FulfillmentMatch[] } | null;
+  /**
+   * When this contract fails if the pattern never comes: the end of its
+   * league's season (30 Nov in Sweden, 31 May for the Championship).
+   * Optional: an old backend answering mid-deploy does not send this.
+   */
+  seasonEndsAt?: string;
   /** Optional: an old backend answering mid-deploy does not send this. */
   schedule?: TeamScheduleData;
   /** Optional: an old backend answering mid-deploy does not send this. */

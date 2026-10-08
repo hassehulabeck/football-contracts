@@ -26,6 +26,12 @@ function formatDate(dt: string) {
   return new Date(dt).toLocaleString('sv-SE', { dateStyle: 'medium', timeStyle: 'short' });
 }
 
+// Date only, read in UTC: the season cutoff is 23:59:59 UTC, which local time
+// would push into the next day and name the wrong date.
+function formatDay(dt: string) {
+  return new Date(dt).toLocaleDateString('sv-SE', { dateStyle: 'medium', timeZone: 'UTC' });
+}
+
 interface MyBid {
   amount: number;
   updatedAt: string;
@@ -211,7 +217,8 @@ export default function ContractDetailPage() {
             {contract.couponsSold === 1 ? 'coupon is' : 'coupons are'} held. This contract stays
             open until {formatTeamName(contract.team.name)} produces {contract.pattern} in three
             consecutive
-            matches, or until the season ends on 30 November.
+            matches, or until the season ends
+            {contract.seasonEndsAt ? ` on ${formatDay(contract.seasonEndsAt)}` : ''}.
           </p>
         </div>
       )}

@@ -8,6 +8,7 @@
 import { PrismaClient } from '@prisma/client';
 import { ingestMatches, toDateParam } from '../lib/ingestMatches';
 import { findPatternWindow } from '../lib/fulfillment';
+import { seasonEndFor } from '../lib/season';
 
 const prisma = new PrismaClient();
 const COUPON_PAYOUT = 100;
@@ -17,11 +18,6 @@ const COUPON_PAYOUT = 100;
 // costs nothing extra in requests — only the rows re-compared.
 const LOOKBACK_DAYS = 4;
 
-/** Contracts can only be declared failed once the season is over: Nov 30, UTC. */
-function seasonIsOver(now: Date): boolean {
-  return now > new Date(Date.UTC(now.getUTCFullYear(), 10, 30, 23, 59, 59));
-}
-
 export async function checkContractFulfillment() {
   console.log('[checkFulfillment] Running');
 
@@ -30,7 +26,6 @@ export async function checkContractFulfillment() {
 
   try {
     const ingest = await ingestMatches(prisma, {
-      season: now.getUTCFullYear(),
       from: toDateParam(from),
       to: toDateParam(now),
       log: (msg) => console.log(`[checkFulfillment]${msg}`),
@@ -50,7 +45,6 @@ export async function checkContractFulfillment() {
     include: { team: true },
   });
 
-  const over = seasonIsOver(now);
   let fulfilledCount = 0;
   let failedCount = 0;
 
@@ -70,7 +64,9 @@ export async function checkContractFulfillment() {
     if (window) {
       await fulfillContract(contract.id);
       fulfilledCount++;
-    } else if (over) {
+    } else if (now > seasonEndFor(contract.team.league, contract.createdAt)) {
+      // Only once the contract's own league season is over: Nov 30 for the
+      // Swedish leagues, May 31 for the Championship. See lib/season.ts.
       await prisma.contract.update({
         where: { id: contract.id },
         data: { status: 'FAILED', resolvedAt: new Date() },

@@ -207,8 +207,12 @@ export default function RulesPage() {
       <Section n="9" title="When contracts end">
         <p>
           A contract has no individual deadline. It stays open until the pattern appears — or
-          until the season closes on <strong className="text-orange-100">30 November</strong>,
-          at which point any contract that never came true is marked failed.
+          until its league&apos;s season closes, at which point any contract that never came
+          true is marked failed. For the Swedish leagues that is{' '}
+          <strong className="text-orange-100">30 November</strong>. The Championship plays
+          from August to May, so its contracts run until{' '}
+          <strong className="text-orange-100">31 May</strong> the following year, play-offs
+          included.
         </p>
         <p>
           A failed contract pays nothing. The credits you spent on the coupon are gone. A
