@@ -84,7 +84,14 @@ export async function userRoutes(server: FastifyInstance) {
       (b) => b.auction.closed && !wonContractIds.has(b.auction.contract.id),
     );
 
-    return reply.send({ ...user, bids, lostBids });
+    // What each coupon cost. Settlement charges the winning bid's own amount,
+    // a player has one bid per auction, and bids are frozen once it closes, so
+    // the bid on the coupon's contract is exactly what was paid. Null only if
+    // that bid row is ever missing.
+    const pricePaid = new Map(user.bids.map((b) => [b.auction.contract.id, b.amount]));
+    const coupons = user.coupons.map((c) => ({ ...c, pricePaid: pricePaid.get(c.contractId) ?? null }));
+
+    return reply.send({ ...user, coupons, bids, lostBids });
   });
 
   /**
