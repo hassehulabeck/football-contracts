@@ -25,11 +25,16 @@
   --color-league-championship: #06b6d4;
   --color-league-championship-accent: #22d3ee;
 
-  /* No webfonts are loaded yet; these were `var(--font-*)` stacks pointing at
-     variables nothing defined, which voided the whole declaration. */
-  --font-display: Georgia, serif;
-  --font-body: system-ui, sans-serif;
-  --font-mono: ui-monospace, monospace;
+}
+
+/* The --font-fraunces / --font-inter / --font-jetbrains-mono variables are set
+   by next/font in layout.tsx. Their names must differ from the theme keys: a
+   `--font-display: var(--font-display)` cycle voids the declaration.
+   `inline` makes the utilities reference the next/font variables directly. */
+@theme inline {
+  --font-display: var(--font-fraunces), Georgia, serif;
+  --font-body: var(--font-inter), system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
 }
 
 /*
