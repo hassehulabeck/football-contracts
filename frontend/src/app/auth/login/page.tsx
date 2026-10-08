@@ -73,6 +73,9 @@ export default function LoginPage() {
             onChange={(e) => setPassword(e.target.value)}
             required
           />
+          <Link href="/auth/forgot-password" className="text-brand-400 hover:text-brand-300 text-sm -mt-3 self-end">
+            Forgot password?
+          </Link>
           {error && <p className="text-red-400 text-sm">{error}</p>}
           {unverified && (
             resendState === 'sent' ? (
