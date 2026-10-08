@@ -2,7 +2,7 @@ import { FastifyInstance } from 'fastify';
 import bcrypt from 'bcrypt';
 import { z } from 'zod';
 import crypto from 'crypto';
-import { sendActivationEmail } from '../lib/email';
+import { sendActivationEmail, sendPasswordResetEmail } from '../lib/email';
 
 const registerSchema = z.object({
   email: z.string().email(),
@@ -23,6 +23,27 @@ const resendActivationSchema = z.object({
 // enough that a friend who mistypes their email doesn't have to wait long
 // for a fresh link.
 const RESEND_COOLDOWN_MS = 60_000;
+
+const forgotPasswordSchema = z.object({
+  email: z.string().email(),
+});
+
+const resetPasswordSchema = z.object({
+  token: z.string().min(1),
+  password: z.string().min(8),
+});
+
+const RESET_TOKEN_TTL_MS = 60 * 60_000;
+
+// Same reply whether or not the account exists, so this endpoint can't be
+// used to probe which emails are registered.
+const FORGOT_PASSWORD_REPLY = {
+  message: 'If an account exists for that email, a reset link is on its way',
+};
+
+function hashResetToken(token: string) {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}
 
 export async function authRoutes(server: FastifyInstance) {
   server.post('/register', async (req, reply) => {
@@ -93,6 +114,64 @@ export async function authRoutes(server: FastifyInstance) {
     });
 
     return reply.send({ message: 'Account activated. You can now log in.' });
+  });
+
+  server.post('/forgot-password', async (req, reply) => {
+    const body = forgotPasswordSchema.parse(req.body);
+
+    const user = await server.prisma.user.findUnique({ where: { email: body.email } });
+    if (!user) return reply.send(FORGOT_PASSWORD_REPLY);
+
+    // Silently dropped inside the cooldown: a 429 here would reveal that the
+    // account exists.
+    if (user.passwordResetSentAt && Date.now() - user.passwordResetSentAt.getTime() < RESEND_COOLDOWN_MS) {
+      return reply.send(FORGOT_PASSWORD_REPLY);
+    }
+
+    // A new request replaces any earlier link, so only the latest email works.
+    const token = crypto.randomBytes(32).toString('hex');
+    const now = new Date();
+    await server.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordResetTokenHash: hashResetToken(token),
+        passwordResetExpiresAt: new Date(now.getTime() + RESET_TOKEN_TTL_MS),
+        passwordResetSentAt: now,
+      },
+    });
+
+    await sendPasswordResetEmail(user.email, token);
+
+    return reply.send(FORGOT_PASSWORD_REPLY);
+  });
+
+  server.post('/reset-password', async (req, reply) => {
+    const body = resetPasswordSchema.parse(req.body);
+
+    const user = await server.prisma.user.findUnique({
+      where: { passwordResetTokenHash: hashResetToken(body.token) },
+    });
+    if (!user || !user.passwordResetExpiresAt || user.passwordResetExpiresAt < new Date()) {
+      return reply.status(400).send({ error: 'This reset link is invalid or has expired — request a new one' });
+    }
+
+    const passwordHash = await bcrypt.hash(body.password, 12);
+
+    // Following the emailed link proves the player owns the address, so an
+    // unverified account is activated here too instead of bouncing them back
+    // to the activation flow.
+    await server.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordHash,
+        passwordResetTokenHash: null,
+        passwordResetExpiresAt: null,
+        emailVerified: true,
+        activationToken: null,
+      },
+    });
+
+    return reply.send({ message: 'Password changed. You can now log in.' });
   });
 
   server.post('/login', async (req, reply) => {
