@@ -287,7 +287,7 @@ export default function ContractDetailPage() {
                       onChange={(e) => setBidAmount(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && placeBid()}
                       placeholder="Credits"
-                      className="flex-1 bg-white/5 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-white/20 focus:outline-none focus:border-brand-500 tabular"
+                      className="flex-1 bg-white/5 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-white/20 focus:outline-hidden focus:border-brand-500 tabular"
                     />
                     <button
                       onClick={placeBid}
