@@ -1,4 +1,10 @@
-import { PrismaClient, ContractPattern } from '@prisma/client';
+import { PrismaClient, ContractPattern, League } from '@prisma/client';
+import {
+  DEFAULT_LEAGUE_CONFIG,
+  couponCountFor,
+  pickTeams,
+  type LeagueBatchConfig,
+} from '../lib/contractBatch';
 
 const prisma = new PrismaClient();
 // Every ordered combination of three results (27) can be drawn. The classic
@@ -22,19 +28,26 @@ export function pickPattern(random: () => number = Math.random): ContractPattern
   }
   return PATTERNS[PATTERNS.length - 1];
 }
-const CONTRACTS_PER_BATCH = 35;
 const AUCTION_HOURS = 48;
 
 export type CreateContractsOptions = {
-  count?: number;
+  /** Contracts per enabled league, overriding LeagueConfig. For seeding test batches. */
+  perLeague?: number;
   /** Auction duration in hours. Shorten it to watch a full cycle on demand. */
   auctionHours?: number;
   dryRun?: boolean;
   log?: (msg: string) => void;
 };
 
+export type LeagueBatchResult = { league: League; created: number; couponCount: number };
+
+/** The admin-edited rows, or the defaults if the table was never seeded. */
+export async function loadLeagueConfig(db: PrismaClient = prisma): Promise<LeagueBatchConfig[]> {
+  const rows = await db.leagueConfig.findMany({ orderBy: { league: 'asc' } });
+  return rows.length > 0 ? rows : DEFAULT_LEAGUE_CONFIG;
+}
+
 export async function createWeeklyContracts(opts: CreateContractsOptions = {}) {
-  const count = opts.count ?? CONTRACTS_PER_BATCH;
   const auctionHours = opts.auctionHours ?? AUCTION_HOURS;
   const dryRun = opts.dryRun ?? false;
   const log = opts.log ?? ((msg: string) => console.log(`[createContracts] ${msg}`));
@@ -44,45 +57,56 @@ export async function createWeeklyContracts(opts: CreateContractsOptions = {}) {
   const teams = await prisma.team.findMany();
   if (teams.length === 0) {
     log('No teams in database — skipping');
-    return { created: 0, couponCount: 0, auctionEnd: null as Date | null };
+    return { created: 0, leagues: [] as LeagueBatchResult[], auctionEnd: null as Date | null };
   }
 
-  // Coupon supply tracks the player base: 10% of verified users once past 50.
-  const userCount = await prisma.user.count({ where: { emailVerified: true } });
-  const couponCount = userCount > 50 ? Math.floor(userCount * 0.1) : 5;
-
+  const config = await loadLeagueConfig();
+  const players = await prisma.user.count({ where: { emailVerified: true } });
   const auctionEnd = new Date(Date.now() + auctionHours * 60 * 60 * 1000);
 
+  const leagues: LeagueBatchResult[] = [];
   let created = 0;
-  for (let i = 0; i < count; i++) {
-    const team = teams[Math.floor(Math.random() * teams.length)];
-    const pattern = pickPattern();
-
-    if (dryRun) {
-      log(`[DRY] would create ${team.name} (${pattern})`);
-      created++;
+  for (const cfg of config) {
+    if (!cfg.enabled) {
+      log(`[${cfg.league}] disabled — skipping`);
       continue;
     }
+    const couponCount = couponCountFor(players, cfg);
+    const picks = pickTeams(
+      teams.filter((t) => t.league === cfg.league),
+      opts.perLeague ?? cfg.contractsPerWeek,
+    );
 
-    const contract = await prisma.contract.create({
-      data: {
-        teamId: team.id,
-        pattern,
-        status: 'ACTIVE',
-        couponCount,
-        coupons: { create: Array.from({ length: couponCount }, () => ({})) },
-        auction: { create: { endsAt: auctionEnd } },
-      },
-    });
-    created++;
+    for (const team of picks) {
+      const pattern = pickPattern();
 
-    log(`Created contract ${contract.id} for ${team.name} (${pattern})`);
+      if (dryRun) {
+        log(`[DRY] would create ${team.name} (${pattern}), ${couponCount} coupons`);
+        continue;
+      }
+
+      const contract = await prisma.contract.create({
+        data: {
+          teamId: team.id,
+          pattern,
+          status: 'ACTIVE',
+          couponCount,
+          coupons: { create: Array.from({ length: couponCount }, () => ({})) },
+          auction: { create: { endsAt: auctionEnd } },
+        },
+      });
+      log(`Created contract ${contract.id} for ${team.name} (${pattern})`);
+    }
+
+    leagues.push({ league: cfg.league, created: picks.length, couponCount });
+    created += picks.length;
   }
 
   log(
-    `Done — ${created} contracts, ${couponCount} coupons each, ` +
+    `Done — ${created} contracts for ${players} activated players ` +
+      `(${leagues.map((l) => `${l.league} ${l.created}×${l.couponCount}`).join(', ')}), ` +
       `auction ends ${auctionEnd.toISOString()}`,
   );
 
-  return { created, couponCount, auctionEnd };
+  return { created, leagues, auctionEnd };
 }

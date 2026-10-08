@@ -80,6 +80,10 @@ model User {
   // throttle by elapsed time instead of tracking a separate counter.
   activationTokenSentAt DateTime?
   credits         Int       @default(1000)
+  // Grants /api/admin. Only settable from the server (npm run admin:grant),
+  // never through the API, and re-read from the database on every admin
+  // request rather than trusted from the JWT, so a revoke bites immediately.
+  isAdmin         Boolean   @default(false)
   // The public identity, shown on the leaderboard in place of the email.
   //
   // Nullable because every account predates the column, and registration does
@@ -221,4 +225,21 @@ model Fixture {
 
   @@unique([externalId, teamId])
   @@index([teamId, kickoffAt])
+}
+
+// Per-league knobs for the weekly batch, edited from /admin. One row per
+// league, seeded by the migration that created the table. The coupon count for
+// a new contract is clamp(round(activated players × couponRatio), couponMin,
+// couponMax) — see lib/contractBatch.ts.
+model LeagueConfig {
+  league           League   @id
+  enabled          Boolean  @default(true)
+  contractsPerWeek Int
+  couponRatio      Float    @default(0.1)
+  couponMin        Int      @default(5)
+  couponMax        Int      @default(100)
+  updatedAt        DateTime @updatedAt
+  // The admin who made the last change. A plain id, not a relation: the audit
+  // trail should survive the account being deleted.
+  updatedById      String?
 }

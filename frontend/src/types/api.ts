@@ -146,3 +146,22 @@ export interface LeaderboardEntry {
   displayName: string;
   credits: number;
 }
+
+/** One league's weekly-batch settings, as published by GET /api/leagues/config. */
+export interface LeagueBatchConfig {
+  league: League;
+  enabled: boolean;
+  contractsPerWeek: number;
+  couponRatio: number;
+  couponMin: number;
+  couponMax: number;
+  /** What a contract created right now would carry, given the current player count. */
+  couponCount: number;
+}
+
+/** GET /api/admin/leagues row: the public fields plus the audit trail. */
+export interface AdminLeagueConfig extends LeagueBatchConfig {
+  updatedAt: string;
+  updatedById: string | null;
+}
+
