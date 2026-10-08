@@ -95,7 +95,7 @@ export function ContractFilters({
           <select
             value={status}
             onChange={(e) => onStatusChange(e.target.value as StatusFilter)}
-            className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-orange-100 focus:outline-none focus:border-brand-500"
+            className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-orange-100 focus:outline-hidden focus:border-brand-500"
           >
             {STATUS_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>
@@ -110,7 +110,7 @@ export function ContractFilters({
           <select
             value={teamId}
             onChange={(e) => onTeamChange(e.target.value)}
-            className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-orange-100 focus:outline-none focus:border-brand-500 max-w-[14rem]"
+            className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-orange-100 focus:outline-hidden focus:border-brand-500 max-w-56"
           >
             <option value="ALL">All teams</option>
             {/* Grouped by league, not a flat list. Dropping the " W" suffix
