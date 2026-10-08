@@ -1,8 +1,27 @@
 import { PrismaClient, ContractPattern } from '@prisma/client';
 
 const prisma = new PrismaClient();
-// Every ordered combination of three results (27), drawn with equal odds.
+// Every ordered combination of three results (27) can be drawn. The classic
+// patterns are weighted up; anything not listed here has weight 1.
+// With these weights: WWW/LLL ≈ 10.8% each, WDL/LDW ≈ 8.1%, the rest ≈ 2.7%.
+const PATTERN_WEIGHTS: Partial<Record<ContractPattern, number>> = {
+  WWW: 4,
+  LLL: 4,
+  WDL: 3,
+  LDW: 3,
+};
 const PATTERNS = Object.values(ContractPattern);
+const TOTAL_WEIGHT = PATTERNS.reduce((sum, p) => sum + (PATTERN_WEIGHTS[p] ?? 1), 0);
+
+/** Weighted draw over all patterns. `random` is injectable for testing. */
+export function pickPattern(random: () => number = Math.random): ContractPattern {
+  let roll = random() * TOTAL_WEIGHT;
+  for (const pattern of PATTERNS) {
+    roll -= PATTERN_WEIGHTS[pattern] ?? 1;
+    if (roll < 0) return pattern;
+  }
+  return PATTERNS[PATTERNS.length - 1];
+}
 const CONTRACTS_PER_BATCH = 35;
 const AUCTION_HOURS = 48;
 
@@ -37,7 +56,7 @@ export async function createWeeklyContracts(opts: CreateContractsOptions = {}) {
   let created = 0;
   for (let i = 0; i < count; i++) {
     const team = teams[Math.floor(Math.random() * teams.length)];
-    const pattern = PATTERNS[Math.floor(Math.random() * PATTERNS.length)];
+    const pattern = pickPattern();
 
     if (dryRun) {
       log(`[DRY] would create ${team.name} (${pattern})`);

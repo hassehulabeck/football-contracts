@@ -10,8 +10,8 @@ export const metadata: Metadata = {
     'How Football Contracts works: contracts, silent auctions, coupons, fulfilment and payouts.',
 };
 
-// A sample only — every one of the 27 three-result patterns can be drawn.
-const EXAMPLE_PATTERNS = ['WWW', 'DDD', 'WDL', 'LDW', 'WWL', 'DLD'];
+// The four weighted-up patterns first, then a sample of the rarer 23.
+const EXAMPLE_PATTERNS = ['WWW', 'LLL', 'WDL', 'LDW', 'DDD', 'DLD'];
 
 export default function RulesPage() {
   return (
@@ -74,8 +74,9 @@ export default function RulesPage() {
           creates <strong className="text-orange-100">35 new contracts</strong>. Each one picks
           a team at random from all five leagues, and a pattern of three results at random —
           any mix of wins, draws and losses, so there are{' '}
-          <strong className="text-orange-100">27 possible patterns</strong>, all equally
-          likely. A few of them:
+          <strong className="text-orange-100">27 possible patterns</strong>. They are not
+          equally likely: WWW and LLL come up most often, WDL and LDW nearly as often, and
+          every other pattern is rarer. A few of them:
         </p>
         <div className="rounded-xl border border-white/10 overflow-hidden mt-4">
           <table className="w-full text-sm">
