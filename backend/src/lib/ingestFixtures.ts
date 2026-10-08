@@ -12,6 +12,7 @@
  */
 import { PrismaClient, League, FixtureStatus } from '@prisma/client';
 import { fetchUpcomingLeagueFixtures, LEAGUE_IDS, ApiFixture } from './footballApi';
+import { seasonFor } from './season';
 
 const LEAGUE_ENUM_TO_ID: Record<League, number> = {
   ALLSVENSKAN: LEAGUE_IDS.ALLSVENSKAN,
@@ -30,6 +31,11 @@ const STATUS_BY_SHORT_CODE: Record<string, FixtureStatus> = {
 };
 
 export type IngestFixturesOptions = {
+  /**
+   * Force one api-football season number onto every league. Omit it and each
+   * league gets its own current season (see lib/season.ts) — the Championship
+   * is numbered by its starting year, so one number does not fit all five.
+   */
   season?: number;
   /** Inclusive date window, YYYY-MM-DD. Omit both for the rest of the season. */
   from?: string;
@@ -52,7 +58,6 @@ export async function ingestFixtures(
   prisma: PrismaClient,
   opts: IngestFixturesOptions = {},
 ): Promise<IngestFixturesResult> {
-  const season = opts.season ?? new Date().getUTCFullYear();
   const log = opts.log ?? console.log;
   const dryRun = opts.dryRun ?? false;
 
@@ -68,6 +73,7 @@ export async function ingestFixtures(
   };
 
   for (const [league, leagueId] of Object.entries(LEAGUE_ENUM_TO_ID) as [League, number][]) {
+    const season = opts.season ?? seasonFor(league, new Date());
     let fixtures: ApiFixture[];
     try {
       fixtures = await fetchUpcomingLeagueFixtures(leagueId, season, opts.from, opts.to);
@@ -78,7 +84,7 @@ export async function ingestFixtures(
       continue;
     }
 
-    log(`  [${league}] league=${leagueId} → ${fixtures.length} upcoming fixtures`);
+    log(`  [${league}] league=${leagueId} season=${season} → ${fixtures.length} upcoming fixtures`);
     result.fixtures += fixtures.length;
 
     for (const f of fixtures) {

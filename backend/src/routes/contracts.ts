@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { ContractStatus, League, Prisma } from '@prisma/client';
 import { z } from 'zod';
 import { findPatternWindow, patternProgress } from '../lib/fulfillment';
+import { seasonEndFor } from '../lib/season';
 
 /**
  * Player-facing status values, mapped onto the enum.
@@ -154,7 +155,20 @@ export async function contractRoutes(server: FastifyInstance) {
       progressDetail(server, contract),
     ]);
 
-    return reply.send({ ...contract, couponsSold, couponsPaid, fulfillment, schedule, progress });
+    // The deadline checkFulfillment fails this contract at, from the same
+    // function, so the page can name the real date instead of one hard-coded
+    // for the Swedish leagues.
+    const seasonEndsAt = seasonEndFor(contract.team.league, contract.createdAt);
+
+    return reply.send({
+      ...contract,
+      couponsSold,
+      couponsPaid,
+      fulfillment,
+      schedule,
+      progress,
+      seasonEndsAt,
+    });
   });
 }
 

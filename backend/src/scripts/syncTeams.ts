@@ -4,7 +4,7 @@
  *
  * Flags:
  *   --dry-run        report what would change without writing
- *   --season=2026    override the season (defaults to the current year)
+ *   --season=2026    force one season on every league (default: each league's current one)
  *
  * The API is the source of truth. Reconciliation runs in four passes:
  *
@@ -26,13 +26,14 @@
 import 'dotenv/config';
 import { PrismaClient, League } from '@prisma/client';
 import { fetchTeams, LEAGUE_IDS } from '../lib/footballApi';
+import { seasonFor } from '../lib/season';
 
 const prisma = new PrismaClient();
 
 const DRY_RUN = process.argv.includes('--dry-run');
-const SEASON = Number(
-  process.argv.find((a) => a.startsWith('--season='))?.split('=')[1] ?? new Date().getFullYear(),
-);
+const SEASON_ARG = process.argv.find((a) => a.startsWith('--season='))?.split('=')[1];
+// Undefined lets each league use its own current season — see lib/season.ts.
+const SEASON = SEASON_ARG === undefined ? undefined : Number(SEASON_ARG);
 
 const LEAGUE_ENUM_TO_ID: Record<League, number> = {
   ALLSVENSKAN: LEAGUE_IDS.ALLSVENSKAN,
@@ -83,11 +84,12 @@ async function loadApiTeams(): Promise<ApiTeam[]> {
   const all: ApiTeam[] = [];
 
   for (const [league, leagueId] of Object.entries(LEAGUE_ENUM_TO_ID) as [League, number][]) {
-    const teams = await fetchTeams(leagueId, SEASON);
+    const season = SEASON ?? seasonFor(league, new Date());
+    const teams = await fetchTeams(leagueId, season);
 
     if (teams.length === 0) {
       throw new Error(
-        `[${league}] league=${leagueId} season=${SEASON} returned 0 teams. ` +
+        `[${league}] league=${leagueId} season=${season} returned 0 teams. ` +
           `Verify LEAGUE_IDS in src/lib/footballApi.ts, and that the plan covers this season. ` +
           `Aborting before any writes — a partial team list would prune live teams.`,
       );
@@ -101,7 +103,7 @@ async function loadApiTeams(): Promise<ApiTeam[]> {
 }
 
 async function main(): Promise<void> {
-  console.log(`\n=== Football Contracts — syncTeams (season ${SEASON})${DRY_RUN ? ' [DRY RUN]' : ''} ===\n`);
+  console.log(`\n=== Football Contracts — syncTeams (season ${SEASON ?? 'current per league'})${DRY_RUN ? ' [DRY RUN]' : ''} ===\n`);
 
   console.log('Fetching squads from api-football.com...');
   const apiTeams = await loadApiTeams();

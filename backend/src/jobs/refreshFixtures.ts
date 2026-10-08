@@ -19,7 +19,6 @@ export async function refreshFixtures() {
 
   try {
     const res = await ingestFixtures(prisma, {
-      season: new Date().getUTCFullYear(),
       log: (msg) => console.log(`[refreshFixtures]${msg}`),
     });
     console.log(
