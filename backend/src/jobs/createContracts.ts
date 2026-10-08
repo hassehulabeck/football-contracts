@@ -1,8 +1,9 @@
 import { PrismaClient, ContractPattern } from '@prisma/client';
 
 const prisma = new PrismaClient();
-const PATTERNS: ContractPattern[] = ['WWW', 'DDD', 'LLL', 'WDL', 'LDW'];
-const CONTRACTS_PER_BATCH = 25;
+// Every ordered combination of three results (27), drawn with equal odds.
+const PATTERNS = Object.values(ContractPattern);
+const CONTRACTS_PER_BATCH = 35;
 const AUCTION_HOURS = 48;
 
 export type CreateContractsOptions = {

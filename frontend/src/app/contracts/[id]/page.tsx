@@ -11,15 +11,8 @@ import { MatchRow } from '@/components/MatchRow';
 import { PatternProgress } from '@/components/PatternProgress';
 import { TeamLogo } from '@/components/TeamLogo';
 import { TeamSchedule } from '@/components/TeamSchedule';
+import { patternDescription } from '@/lib/patterns';
 import type { ContractDetail, AuctionDetail } from '@/types/api';
-
-const PATTERN_DESCRIPTION: Record<string, string> = {
-  WWW: 'Three consecutive wins',
-  DDD: 'Three consecutive draws',
-  LLL: 'Three consecutive losses',
-  WDL: 'Win, then draw, then loss',
-  LDW: 'Loss, then draw, then win',
-};
 
 const STATUS_LABEL: Record<string, string> = {
   PENDING: 'Pending',
@@ -140,7 +133,7 @@ export default function ContractDetailPage() {
         <TeamLogo externalId={contract.team.externalId} className="w-8 h-8" />
         {formatTeamName(contract.team.name)}
       </h1>
-      <p className="text-orange-200 text-xl mb-8">{PATTERN_DESCRIPTION[contract.pattern]}</p>
+      <p className="text-orange-200 text-xl mb-8">{patternDescription(contract.pattern)}</p>
 
       <div className="grid grid-cols-2 gap-3 mb-8">
         <PatternProgress pattern={contract.pattern} progress={contract.progress} />

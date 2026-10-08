@@ -18,16 +18,9 @@ import type {
   StatusFilter,
   Team,
 } from '@/types/api';
+import { patternLabel } from '@/lib/patterns';
 
 const PAGE_SIZE = 50;
-
-const PATTERN_LABEL: Record<string, string> = {
-  WWW: 'Three wins',
-  DDD: 'Three draws',
-  LLL: 'Three losses',
-  WDL: 'Win → Draw → Loss',
-  LDW: 'Loss → Draw → Win',
-};
 
 const STATUS_STYLE: Record<ContractStatus, { label: string; className: string }> = {
   PENDING: { label: 'Pending', className: 'text-white/30' },
@@ -296,7 +289,7 @@ function ContractTable({ contracts }: { contracts: Contract[] }) {
                 <td className="px-4 py-3">
                   <span className="font-mono font-bold text-brand-400">{c.pattern}</span>
                   <span className="text-white/30 ml-2 hidden lg:inline text-xs">
-                    {PATTERN_LABEL[c.pattern]}
+                    {patternLabel(c.pattern)}
                   </span>
                 </td>
                 <td className={`px-4 py-3 font-semibold ${statusStyle.className}`}>
