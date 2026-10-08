@@ -2,6 +2,7 @@ import 'dotenv/config';
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import jwt from '@fastify/jwt';
+import { ZodError } from 'zod';
 import { prismaPlugin } from './plugins/prisma';
 import { authRoutes } from './routes/auth';
 import { contractRoutes } from './routes/contracts';
@@ -13,9 +14,18 @@ import { registerJobs } from './jobs';
 
 const server = Fastify({ logger: true });
 
+// FRONTEND_URL is the canonical address (activation links use it); CORS_ORIGINS
+// lists every address the frontend is served from, e.g. the custom domain *and*
+// the railway.app one. A browser on an unlisted origin gets a preflight without
+// an allow header and never sends the request at all.
+const corsOrigins = (process.env.CORS_ORIGINS ?? process.env.FRONTEND_URL ?? 'http://localhost:3000')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
 async function start() {
   await server.register(cors, {
-    origin: process.env.FRONTEND_URL ?? 'http://localhost:3000',
+    origin: corsOrigins,
     credentials: true,
   });
 
@@ -24,6 +34,21 @@ async function start() {
   });
 
   await server.register(prismaPlugin);
+
+  // Routes validate with `schema.parse()`, which throws; without this a bad
+  // request body surfaced as a 500 and the frontend could only say
+  // "Something went wrong".
+  server.setErrorHandler((err, req, reply) => {
+    if (err instanceof ZodError) {
+      const issue = err.issues[0];
+      const field = issue.path.join('.');
+      return reply.status(400).send({
+        error: field ? `${field}: ${issue.message}` : issue.message,
+        details: err.flatten(),
+      });
+    }
+    reply.send(err);
+  });
 
   // Railway polls this to decide when the container is live and ready for traffic.
   server.get('/health', async () => ({ status: 'ok' }));
