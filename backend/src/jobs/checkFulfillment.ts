@@ -12,6 +12,7 @@ import { seasonEndFor } from '../lib/season';
 
 import { COUPON_PAYOUT } from '../lib/ledger';
 import { sendPayouts, type Payout } from '../lib/notifications';
+import { reportJobError } from '../lib/alerts';
 
 const prisma = new PrismaClient();
 
@@ -38,8 +39,9 @@ export async function checkContractFulfillment() {
     );
   } catch (err) {
     // Evaluation still runs — matches already in the database may complete a
-    // contract even when today's fetch failed.
-    console.error('[checkFulfillment] Ingest failed:', err);
+    // contract even when today's fetch failed. Still reported: a lapsed API
+    // plan looks exactly like this, and once went unnoticed for weeks.
+    await reportJobError('checkFulfillment ingest', err);
   }
 
   const contracts = await prisma.contract.findMany({
