@@ -6,6 +6,10 @@ const resend = new Resend(process.env.RESEND_API_KEY!);
 const FROM = process.env.FROM_EMAIL ?? 'noreply@footballcontracts.app';
 const FRONTEND_URL = process.env.FRONTEND_URL ?? 'http://localhost:3000';
 
+export function escapeHtml(s: string): string {
+  return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
+}
+
 export async function sendActivationEmail(email: string, token: string) {
   const url = `${FRONTEND_URL}/auth/activate?token=${token}`;
   await resend.emails.send({
@@ -67,4 +71,41 @@ export async function sendBatch(mails: OutgoingMail[], tag: string): Promise<voi
     }
   }
   console.log(`[email:${tag}] sent ${sent}/${mails.length}`);
+}
+
+/**
+ * Forwards a feedback-form message to the site owner. ADMIN_EMAIL is an
+ * environment variable rather than a constant because the repository is
+ * public. Returns whether a mail went out; the caller has already stored the
+ * message, so an unset address or a failed send loses nothing.
+ */
+export async function sendFeedbackEmail(fb: {
+  message: string;
+  replyTo: string | null;
+  username: string | null;
+  page: string | null;
+}): Promise<boolean> {
+  const to = process.env.ADMIN_EMAIL;
+  if (!to) {
+    console.warn('[feedback] ADMIN_EMAIL is not set; message stored but not mailed');
+    return false;
+  }
+  const who = fb.username ? `${fb.username} (signed in)` : 'a visitor';
+  try {
+    const { error } = await resend.emails.send({
+      from: FROM,
+      to,
+      ...(fb.replyTo ? { reply_to: fb.replyTo } : {}),
+      subject: `Feedback from ${fb.username ?? 'a visitor'}`,
+      html:
+        `<p>From ${escapeHtml(who)}${fb.replyTo ? `, answer to ${escapeHtml(fb.replyTo)}` : ', no reply address'}` +
+        `${fb.page ? `, sent from ${escapeHtml(fb.page)}` : ''}:</p>` +
+        `<blockquote style="white-space:pre-wrap;border-left:3px solid #ea580c;margin:0;padding:4px 12px">${escapeHtml(fb.message)}</blockquote>`,
+    });
+    if (error) throw new Error(error.message);
+    return true;
+  } catch (err) {
+    console.error('[feedback] mail failed:', err);
+    return false;
+  }
 }

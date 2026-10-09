@@ -310,3 +310,19 @@ model CreditTransaction {
   @@index([userId, createdAt])
   @@index([type, createdAt])
 }
+
+// Messages from the feedback form. Stored as well as mailed to ADMIN_EMAIL,
+// so nothing is lost while mail is unconfigured or failing.
+model Feedback {
+  id        String   @id @default(cuid())
+  message   String
+  // Where to answer, if the sender wants an answer. For a signed-in sender it
+  // defaults to their account email.
+  replyTo   String?
+  // A plain id, not a relation; cleared when the account is deleted.
+  userId    String?
+  // The page the form was opened from.
+  page      String?
+  emailed   Boolean  @default(false)
+  createdAt DateTime @default(now())
+}

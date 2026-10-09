@@ -93,6 +93,18 @@ export default function RegisterPage() {
           </Button>
         </form>
 
+        <p className="mt-4 text-white/30 text-xs">
+          By creating an account you agree to the{' '}
+          <Link href="/rules" className="text-brand-400 hover:text-brand-300">
+            rules
+          </Link>
+          . We store your email and what you do in the game — see{' '}
+          <Link href="/privacy" className="text-brand-400 hover:text-brand-300">
+            how we handle your data
+          </Link>
+          .
+        </p>
+
         <p className="mt-6 text-center text-white/50 text-sm">
           Already have an account?{' '}
           <Link href="/auth/login" className="text-brand-400 hover:text-brand-300">

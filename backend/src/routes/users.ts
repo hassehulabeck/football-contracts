@@ -1,4 +1,5 @@
 import { FastifyInstance } from 'fastify';
+import bcrypt from 'bcrypt';
 import { z } from 'zod';
 import { authenticate } from '../lib/guards';
 
@@ -12,6 +13,8 @@ const usernameSchema = z.object({
 });
 
 const RENAME_COOLDOWN_MS = 30 * 24 * 60 * 60 * 1000;
+
+const deleteAccountSchema = z.object({ password: z.string().min(1) });
 
 const transactionsQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(25),
@@ -201,5 +204,35 @@ export async function userRoutes(server: FastifyInstance) {
       }
       throw err;
     }
+  });
+
+  /**
+   * Deletes the account and everything tied to it, for good. The password is
+   * asked again so a borrowed, still-signed-in browser cannot do it.
+   *
+   * Bids go (including any on open auctions, which simply drop out of them).
+   * Coupons are released rather than deleted: the contract keeps its count,
+   * the coupon just has no owner, and payouts skip ownerless coupons. Ledger
+   * rows and favourites cascade with the user. Feedback keeps the message
+   * but loses the link to the account.
+   */
+  server.delete('/me', { preHandler: authenticate }, async (req, reply) => {
+    const { password } = deleteAccountSchema.parse(req.body);
+    const userId = (req.user as any).sub as string;
+
+    const user = await server.prisma.user.findUnique({ where: { id: userId }, select: { passwordHash: true } });
+    if (!user) return reply.status(404).send({ error: 'Not found' });
+    if (!(await bcrypt.compare(password, user.passwordHash))) {
+      return reply.status(403).send({ error: 'Wrong password' });
+    }
+
+    await server.prisma.$transaction([
+      server.prisma.bid.deleteMany({ where: { userId } }),
+      server.prisma.coupon.updateMany({ where: { ownerId: userId }, data: { ownerId: null } }),
+      server.prisma.feedback.updateMany({ where: { userId }, data: { userId: null, replyTo: null } }),
+      server.prisma.user.delete({ where: { id: userId } }),
+    ]);
+
+    return reply.send({ message: 'Account deleted' });
   });
 }

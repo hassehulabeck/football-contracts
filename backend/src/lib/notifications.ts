@@ -13,7 +13,7 @@
  */
 import crypto from 'crypto';
 import { League, PrismaClient } from '@prisma/client';
-import { sendBatch, type OutgoingMail } from './email';
+import { escapeHtml, sendBatch, type OutgoingMail } from './email';
 import { COUPON_PAYOUT } from './ledger';
 
 export type NotificationKind = 'results' | 'payouts' | 'new' | 'all';
@@ -80,10 +80,6 @@ function unsubscribeHeaders(userId: string, kind: NotificationKind): Record<stri
 }
 
 // ─── Layout ─────────────────────────────────────────────────────────────────
-
-function escapeHtml(s: string): string {
-  return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
-}
 
 /** See formatTeamName on the frontend: the " W" suffix is noise in prose. */
 function plainTeamName(name: string): string {
