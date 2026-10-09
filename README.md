@@ -30,4 +30,6 @@ The fulfillment of a contract will be decided from the date a game is played, no
 
 ## Scores
 
-Every user is ranked by their credit, and at the end of the season there will be winners announced. There will also be mid-term competitions, like the user that won the most in august or similar.
+Every user is ranked by profit: what their coupons paid out minus what they cost. The starting credits do not count. There is a monthly table as well (the user that won the most in August, say), and one by plain balance. At the end of the season there will be winners announced.
+
+A user who runs out of credits cannot bid until one of their coupons pays out; there is no top-up.

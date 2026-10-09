@@ -236,9 +236,16 @@ export default function RulesPage() {
         </p>
         <p>
           The <Link href="/leaderboard" className="text-brand-400 hover:text-brand-300 transition-colors">leaderboard</Link>{' '}
-          ranks activated players by total credits and shows the top 100. Since your balance
-          drops the moment an auction settles and only recovers when a contract is fulfilled,
-          expect to slide down the table while your coupons are still pending.
+          ranks activated players by <strong className="text-brand-400">profit</strong>: what
+          your coupons paid out minus what they cost. The 1,000 credits you start with do not
+          count, so a player who never bids sits at zero. A coupon costs you the moment its
+          auction settles and only pays when the contract is fulfilled, so expect to slide down
+          the table while your coupons are still pending. There is also a monthly table, and one
+          by plain balance.
+        </p>
+        <p>
+          If you run out of credits, you cannot bid until one of your coupons pays out. There
+          is no top-up — choose your bids with that in mind.
         </p>
       </Section>
 

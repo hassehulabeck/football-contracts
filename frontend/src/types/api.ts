@@ -151,6 +151,20 @@ export interface LeaderboardEntry {
    */
   displayName: string;
   credits: number;
+  /**
+   * Credits won minus credits spent on the board's period — purchases and
+   * payouts only. Optional: an old backend mid-deploy does not send it.
+   */
+  profit?: number;
+}
+
+export type LeaderboardBoard = 'profit' | 'month' | 'credits';
+
+export interface LeaderboardResponse {
+  board: LeaderboardBoard;
+  /** "YYYY-MM" for the monthly board, otherwise null. */
+  month: string | null;
+  entries: LeaderboardEntry[];
 }
 
 /** One league's weekly-batch settings, as published by GET /api/leagues/config. */
