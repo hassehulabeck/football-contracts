@@ -9,7 +9,8 @@ import { formatTeamName } from '@/lib/formatTeamName';
 import { TeamLogo } from '@/components/TeamLogo';
 import { StatTile } from '@/components/ui/StatTile';
 import { CreditHistory } from '@/components/CreditHistory';
-import type { Contract, ContractListResponse, LeaderboardEntry } from '@/types/api';
+import { fetchLeaderboard } from '@/lib/leaderboard';
+import type { Contract, ContractListResponse } from '@/types/api';
 
 interface MyCoupon {
   id: string;
@@ -80,8 +81,8 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!user) return;
     api.get<MeData>('/api/users/me').then((r) => setMe(r.data));
-    api.get<LeaderboardEntry[]>('/api/leaderboard').then((r) => {
-      const pos = r.data.findIndex((u) => u.id === user.id);
+    fetchLeaderboard('profit').then((entries) => {
+      const pos = entries.findIndex((u) => u.id === user.id);
       setRank(pos >= 0 ? pos + 1 : null);
     });
     api
