@@ -1,6 +1,7 @@
 import cron from 'node-cron';
 import { PrismaClient } from '@prisma/client';
 import { sendNewContracts } from '../lib/notifications';
+import { withAlert } from '../lib/alerts';
 import { createWeeklyContracts } from './createContracts';
 import { closeExpiredAuctions } from './closeAuctions';
 import { checkContractFulfillment } from './checkFulfillment';
@@ -25,25 +26,25 @@ export function registerJobs() {
   // players about contracts nobody scheduled.
   cron.schedule(
     '0 3 * * 3',
-    async () => {
+    withAlert('createContracts', async () => {
       const { contractIds } = await createWeeklyContracts();
       try {
         await sendNewContracts(prisma, contractIds);
       } catch (err) {
         console.error('[createContracts] New-contract mail failed:', err);
       }
-    },
+    }),
     { timezone: 'Europe/Stockholm' },
   );
 
   // Every 15 minutes — close any auctions that have passed their end time
-  cron.schedule('*/15 * * * *', closeExpiredAuctions);
+  cron.schedule('*/15 * * * *', withAlert('closeAuctions', closeExpiredAuctions));
 
   // Every 3 hours, offset off the hour so it does not collide with the auction
   // sweep. Costs 4 API requests per run — 32/day against a 7500/day quota — so
   // the cadence is set by how fast we want coupons paid out, not by the budget.
   // The old per-team ingest cost ~1440/day, which is why this was unscheduled.
-  cron.schedule('20 */3 * * *', checkContractFulfillment, { timezone: 'UTC' });
+  cron.schedule('20 */3 * * *', withAlert('checkFulfillment', checkContractFulfillment), { timezone: 'UTC' });
 
   // Daily at 04:00 UTC — two or three hours after the Wednesday contract job
   // depending on the season's offset, so the two never share a tick either way.
@@ -52,7 +53,8 @@ export function registerJobs() {
   // fresh as the last poll; daily keeps a moved fixture from sitting wrong on a
   // contract page for the better part of a week. Costs 4 requests a day against
   // a 7500/day quota.
-  cron.schedule('0 4 * * *', () => refreshFixtures(), { timezone: 'UTC' });
+  cron.schedule('0 4 * * *', withAlert('refreshFixtures', refreshFixtures), { timezone: 'UTC' });
 
+  // Every job is wrapped in withAlert, which mails ADMIN_EMAIL when it throws.
   console.log('Scheduled jobs registered');
 }

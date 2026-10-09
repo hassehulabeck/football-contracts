@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { useRequireAuth } from '@/lib/auth';
@@ -92,7 +93,12 @@ export default function AdminPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-10">
-      <h1 className="text-5xl text-brand-500 mb-2">Admin</h1>
+      <div className="flex items-baseline justify-between mb-2">
+        <h1 className="text-5xl text-brand-500">Admin</h1>
+        <Link href="/admin/users" className="text-sm text-brand-400 hover:text-brand-300 transition-colors">
+          Players →
+        </Link>
+      </div>
       <p className="text-white/50 mb-8">
         Settings for the weekly batch, every Wednesday at 03:00. Changes apply from the next
         batch; contracts already created keep their coupons.

@@ -11,6 +11,7 @@
  */
 import { PrismaClient } from '@prisma/client';
 import { ingestFixtures } from '../lib/ingestFixtures';
+import { reportJobError } from '../lib/alerts';
 
 const prisma = new PrismaClient();
 
@@ -26,6 +27,6 @@ export async function refreshFixtures() {
         `${res.updated} updated, ${res.unchanged} unchanged`,
     );
   } catch (err) {
-    console.error('[refreshFixtures] Failed:', err);
+    await reportJobError('refreshFixtures', err);
   }
 }

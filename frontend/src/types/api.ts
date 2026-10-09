@@ -228,3 +228,18 @@ export interface NotificationPrefs {
   favouriteLeagues: League[];
   favouriteTeamIds: string[];
 }
+
+/** One row of GET /api/admin/users. */
+export interface AdminUser {
+  id: string;
+  email: string;
+  username: string | null;
+  credits: number;
+  /** Coupon payouts minus purchases, as on the leaderboard. */
+  profit: number;
+  emailVerified: boolean;
+  isAdmin: boolean;
+  createdAt: string;
+  bids: number;
+  coupons: number;
+}
