@@ -81,7 +81,7 @@ export default function PrivacyPage() {
         <ul className="list-disc pl-6 flex flex-col gap-2">
           <li>
             <strong className="text-orange-100">Railway</strong> hosts the site and its database.
-            The servers are in the United States.
+            The servers are in the EU, in Amsterdam, the Netherlands.
           </li>
           <li>
             <strong className="text-orange-100">Resend</strong> delivers our emails, so it
@@ -95,9 +95,10 @@ export default function PrivacyPage() {
           </li>
         </ul>
         <p>
-          Because Railway and Resend are in the United States, your data is processed outside
-          the EU/EEA. Both act on our behalf under their data processing terms. We never sell
-          your data or share it with anyone else.
+          Your account and game data are stored in the EU. Resend is the exception: as a US
+          company, it handles your email address and the mails we send you outside the EU/EEA.
+          Both Railway and Resend act on our behalf under their data processing terms. We never
+          sell your data or share it with anyone else.
         </p>
       </Section>
 
