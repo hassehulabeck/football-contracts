@@ -248,16 +248,34 @@ export default function ContractDetailPage() {
                 </div>
                 {contract.auction.closed && (
                   <div>
-                    <p className="text-white/40 text-xs mb-1">Highest bid</p>
-                    {/* `!= null` on purpose: during a deploy the old backend
-                        can still be answering, and it has no highestBid at
-                        all. Undefined must fall through to the dash. */}
-                    <p className="tabular font-black text-2xl text-brand-400">
-                      {auction.highestBid != null ? auction.highestBid : '—'}
-                      {auction.highestBid != null && (
-                        <span className="text-white/40 text-sm font-normal ml-1">cr</span>
-                      )}
-                    </p>
+                    {/* The range the coupons went for teaches the next bid
+                        better than the top bid alone. Falls back to the
+                        highest bid for an old backend mid-deploy, and to a
+                        dash when nothing was won. `!= null` on purpose, so
+                        undefined falls through too. */}
+                    {auction.winningBids ? (
+                      <>
+                        <p className="text-white/40 text-xs mb-1">
+                          {auction.winningBids.count === 1 ? 'Coupon went for' : 'Coupons went for'}
+                        </p>
+                        <p className="tabular font-black text-2xl text-brand-400">
+                          {auction.winningBids.min === auction.winningBids.max
+                            ? auction.winningBids.min
+                            : `${auction.winningBids.min}–${auction.winningBids.max}`}
+                          <span className="text-white/40 text-sm font-normal ml-1">cr</span>
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-white/40 text-xs mb-1">Highest bid</p>
+                        <p className="tabular font-black text-2xl text-brand-400">
+                          {auction.highestBid != null ? auction.highestBid : '—'}
+                          {auction.highestBid != null && (
+                            <span className="text-white/40 text-sm font-normal ml-1">cr</span>
+                          )}
+                        </p>
+                      </>
+                    )}
                   </div>
                 )}
               </>

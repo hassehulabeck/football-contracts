@@ -133,10 +133,11 @@ export default function RulesPage() {
           you can weigh it against the coupon supply before you commit.
         </p>
         <p>
-          Once the auction closes, the contract page also reveals the{' '}
-          <strong className="text-orange-100">highest bid</strong> it received — still without
-          the bidder&apos;s name. It tells you what the contract actually went for, which is
-          the number worth knowing next time the same team comes up.
+          Once the auction closes, the contract page also reveals{' '}
+          <strong className="text-orange-100">what the coupons went for</strong>: the lowest and
+          highest winning bid — still without the bidders&apos; names. The lowest one is the
+          price you had to beat, which is the number worth knowing next time the same team
+          comes up.
         </p>
         <p>
           You may change your bid as often as you like until the auction closes. Only your
