@@ -139,6 +139,12 @@ export interface AuctionDetail {
    * bidding is open — the auction is silent by design.
    */
   highestBid: number | null;
+  /**
+   * What the coupons went for — lowest and highest winning bid — once the
+   * auction has closed. Null while open or if no coupon was won. Optional:
+   * an old backend mid-deploy does not send it.
+   */
+  winningBids?: { min: number; max: number; count: number } | null;
   _count: { bids: number };
 }
 

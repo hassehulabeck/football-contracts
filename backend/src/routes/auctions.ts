@@ -26,6 +26,11 @@ export async function auctionRoutes(server: FastifyInstance) {
     // Replaces a random sample bid, which was unreadable as a signal — it was
     // not the highest, lowest or latest, and changed on every refresh.
     let highestBid: number | null = null;
+    // The price range the coupons actually went for — what tells a player how
+    // to bid next time, which the top bid alone does not. A winning bid is
+    // one whose bidder holds a coupon on this contract: settlement charges
+    // the winner's own bid, and there is one bid per player per auction.
+    let winningBids: { min: number; max: number; count: number } | null = null;
     if (auction.closed) {
       const top = await server.prisma.bid.findFirst({
         where: { auctionId: id },
@@ -33,12 +38,27 @@ export async function auctionRoutes(server: FastifyInstance) {
         select: { amount: true },
       });
       highestBid = top?.amount ?? null;
+
+      const owners = await server.prisma.coupon.findMany({
+        where: { contractId: auction.contractId, ownerId: { not: null } },
+        select: { ownerId: true },
+      });
+      const won = await server.prisma.bid.aggregate({
+        where: { auctionId: id, userId: { in: owners.map((o) => o.ownerId!) } },
+        _min: { amount: true },
+        _max: { amount: true },
+        _count: true,
+      });
+      if (won._count > 0) {
+        winningBids = { min: won._min.amount!, max: won._max.amount!, count: won._count };
+      }
     }
 
     return reply.send({
       ...auction,
       bidCount: auction._count.bids,
       highestBid,
+      winningBids,
     });
   });
 
