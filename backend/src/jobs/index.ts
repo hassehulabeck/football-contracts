@@ -1,8 +1,12 @@
 import cron from 'node-cron';
+import { PrismaClient } from '@prisma/client';
+import { sendNewContracts } from '../lib/notifications';
 import { createWeeklyContracts } from './createContracts';
 import { closeExpiredAuctions } from './closeAuctions';
 import { checkContractFulfillment } from './checkFulfillment';
 import { refreshFixtures } from './refreshFixtures';
+
+const prisma = new PrismaClient();
 
 export function registerJobs() {
   // Every Wednesday at 03:00 Swedish time.
@@ -15,7 +19,22 @@ export function registerJobs() {
   //
   // Wrapped, not passed by reference: node-cron hands the callback the fire
   // time, which would otherwise arrive as the job's options argument.
-  cron.schedule('0 3 * * 3', () => createWeeklyContracts(), { timezone: 'Europe/Stockholm' });
+  //
+  // The new-contracts mail is sent from here rather than inside the job, so
+  // the create:contracts script (test batches, manual reruns) never mails
+  // players about contracts nobody scheduled.
+  cron.schedule(
+    '0 3 * * 3',
+    async () => {
+      const { contractIds } = await createWeeklyContracts();
+      try {
+        await sendNewContracts(prisma, contractIds);
+      } catch (err) {
+        console.error('[createContracts] New-contract mail failed:', err);
+      }
+    },
+    { timezone: 'Europe/Stockholm' },
+  );
 
   // Every 15 minutes — close any auctions that have passed their end time
   cron.schedule('*/15 * * * *', closeExpiredAuctions);

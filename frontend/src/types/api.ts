@@ -213,3 +213,12 @@ export interface CreditTransactionPage {
   /** Pass back as `cursor` for the next page; null on the last one. */
   nextCursor: string | null;
 }
+
+/** GET/PUT /api/notifications/me. */
+export interface NotificationPrefs {
+  notifyAuctionResults: boolean;
+  notifyPayouts: boolean;
+  notifyNewContracts: boolean;
+  favouriteLeagues: League[];
+  favouriteTeamIds: string[];
+}

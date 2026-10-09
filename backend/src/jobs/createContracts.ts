@@ -74,7 +74,7 @@ export async function createWeeklyContracts(opts: CreateContractsOptions = {}) {
   const teams = await prisma.team.findMany();
   if (teams.length === 0) {
     log('No teams in database — skipping');
-    return { created: 0, leagues: [] as LeagueBatchResult[], auctionEnd: null as Date | null };
+    return { created: 0, leagues: [] as LeagueBatchResult[], auctionEnd: null as Date | null, contractIds: [] as string[] };
   }
 
   const config = await loadLeagueConfig();
@@ -89,6 +89,7 @@ export async function createWeeklyContracts(opts: CreateContractsOptions = {}) {
   }
 
   const leagues: LeagueBatchResult[] = [];
+  const contractIds: string[] = [];
   let created = 0;
   for (const cfg of config) {
     if (!cfg.enabled) {
@@ -129,6 +130,7 @@ export async function createWeeklyContracts(opts: CreateContractsOptions = {}) {
           auction: { create: { endsAt: auctionEnd } },
         },
       });
+      contractIds.push(contract.id);
       log(`Created contract ${contract.id} for ${team.name} (${pattern})`);
     }
 
@@ -142,5 +144,5 @@ export async function createWeeklyContracts(opts: CreateContractsOptions = {}) {
       `auction ends ${auctionEnd.toISOString()}`,
   );
 
-  return { created, leagues, auctionEnd };
+  return { created, leagues, auctionEnd, contractIds };
 }

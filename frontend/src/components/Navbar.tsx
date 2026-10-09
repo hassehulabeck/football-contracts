@@ -42,6 +42,9 @@ export function Navbar() {
               <Link href="/dashboard" className="text-sm text-orange-200 hover:text-white transition-colors">
                 Dashboard
               </Link>
+              <Link href="/settings" className="text-sm text-orange-200 hover:text-white transition-colors">
+                Settings
+              </Link>
               {user.isAdmin && (
                 <Link href="/admin" className="text-sm text-orange-200 hover:text-white transition-colors">
                   Admin

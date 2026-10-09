@@ -118,9 +118,31 @@ model User {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
+  // Email notifications, edited at /settings/notifications. Results and
+  // payouts concern the player's own account and default on; the Wednesday
+  // new-contracts mail is opt-in. Every mail carries a one-click unsubscribe
+  // that clears the matching flag — see lib/notifications.ts.
+  notifyAuctionResults Boolean  @default(true)
+  notifyPayouts        Boolean  @default(true)
+  notifyNewContracts   Boolean  @default(false)
+  // Narrows the new-contracts mail. With no favourite leagues or teams at all,
+  // an opted-in player hears about every new contract.
+  favouriteLeagues     League[] @default([])
+
   bids               Bid[]
   coupons            Coupon[]
   creditTransactions CreditTransaction[]
+  favouriteTeams     FavouriteTeam[]
+}
+
+model FavouriteTeam {
+  userId String
+  teamId String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@id([userId, teamId])
 }
 
 model Team {
@@ -129,9 +151,10 @@ model Team {
   name       String
   league     League
 
-  contracts Contract[]
-  matches   Match[]
-  fixtures  Fixture[]
+  contracts  Contract[]
+  matches    Match[]
+  fixtures   Fixture[]
+  favouredBy FavouriteTeam[]
 }
 
 model Contract {
