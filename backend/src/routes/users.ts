@@ -13,6 +13,12 @@ const usernameSchema = z.object({
 
 const RENAME_COOLDOWN_MS = 30 * 24 * 60 * 60 * 1000;
 
+const transactionsQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).default(25),
+  // The id of the last row of the previous page.
+  cursor: z.string().optional(),
+});
+
 export async function userRoutes(server: FastifyInstance) {
   server.get('/me', { preHandler: authenticate }, async (req, reply) => {
     const userId = (req.user as any).sub as string;
@@ -92,6 +98,45 @@ export async function userRoutes(server: FastifyInstance) {
     const coupons = user.coupons.map((c) => ({ ...c, pricePaid: pricePaid.get(c.contractId) ?? null }));
 
     return reply.send({ ...user, coupons, bids, lostBids });
+  });
+
+  /**
+   * The player's credit history, newest first, a page at a time. Each row
+   * carries the contract it concerns so the list can say what was bought or
+   * paid out without a second request.
+   */
+  server.get('/me/transactions', { preHandler: authenticate }, async (req, reply) => {
+    const { limit, cursor } = transactionsQuerySchema.parse(req.query);
+    const userId = (req.user as any).sub as string;
+
+    const rows = await server.prisma.creditTransaction.findMany({
+      where: { userId },
+      // id breaks ties: a payout run writes several rows in the same instant.
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: limit + 1,
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      select: {
+        id: true,
+        amount: true,
+        type: true,
+        note: true,
+        createdAt: true,
+        contract: {
+          select: {
+            id: true,
+            pattern: true,
+            team: { select: { name: true, league: true, externalId: true } },
+          },
+        },
+      },
+    });
+
+    const hasMore = rows.length > limit;
+    const transactions = hasMore ? rows.slice(0, limit) : rows;
+    return reply.send({
+      transactions,
+      nextCursor: hasMore ? transactions[transactions.length - 1].id : null,
+    });
   });
 
   /**

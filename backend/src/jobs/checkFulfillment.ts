@@ -10,8 +10,9 @@ import { ingestMatches, toDateParam } from '../lib/ingestMatches';
 import { findPatternWindow } from '../lib/fulfillment';
 import { seasonEndFor } from '../lib/season';
 
+import { COUPON_PAYOUT } from '../lib/ledger';
+
 const prisma = new PrismaClient();
-const COUPON_PAYOUT = 100;
 
 // How far back each run re-reads. Covers a full weekend plus a missed run, and
 // picks up scores the API corrected after first publishing them. Widening this
@@ -94,6 +95,11 @@ async function fulfillContract(contractId: string) {
       prisma.user.update({ where: { id: c.ownerId! }, data: { credits: { increment: COUPON_PAYOUT } } }),
     ),
     ...coupons.map((c) => prisma.coupon.update({ where: { id: c.id }, data: { paidOut: true } })),
+    ...coupons.map((c) =>
+      prisma.creditTransaction.create({
+        data: { userId: c.ownerId!, amount: COUPON_PAYOUT, type: 'COUPON_PAYOUT', contractId },
+      }),
+    ),
     prisma.contract.update({
       where: { id: contractId },
       data: { status: 'FULFILLED', resolvedAt: new Date() },

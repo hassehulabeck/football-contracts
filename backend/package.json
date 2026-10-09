@@ -22,7 +22,9 @@
     "create:contracts": "ts-node --transpile-only src/scripts/createContracts.ts",
     "create:contracts:prod": "node dist/scripts/createContracts.js",
     "admin:grant": "ts-node --transpile-only src/scripts/grantAdmin.ts",
-    "admin:grant:prod": "node dist/scripts/grantAdmin.js"
+    "admin:grant:prod": "node dist/scripts/grantAdmin.js",
+    "check:ledger": "ts-node --transpile-only src/scripts/checkLedger.ts",
+    "check:ledger:prod": "node dist/scripts/checkLedger.js"
   },
   "prisma": {
     "seed": "ts-node --transpile-only prisma/seed.ts"

@@ -171,3 +171,31 @@ export interface AdminLeagueConfig extends LeagueBatchConfig {
   updatedById: string | null;
 }
 
+
+export type CreditTransactionType =
+  | 'STARTING_BALANCE'
+  | 'COUPON_PURCHASE'
+  | 'COUPON_PAYOUT'
+  | 'ADJUSTMENT'
+  | 'REFINANCE';
+
+/** One change to a player's credits, from /api/users/me/transactions. */
+export interface CreditTransaction {
+  id: string;
+  /** Signed: negative for a purchase. */
+  amount: number;
+  type: CreditTransactionType;
+  note: string | null;
+  createdAt: string;
+  contract: {
+    id: string;
+    pattern: ContractPattern;
+    team: Team;
+  } | null;
+}
+
+export interface CreditTransactionPage {
+  transactions: CreditTransaction[];
+  /** Pass back as `cursor` for the next page; null on the last one. */
+  nextCursor: string | null;
+}

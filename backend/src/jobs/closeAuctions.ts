@@ -74,6 +74,14 @@ export async function closeExpiredAuctions() {
         }
 
         await tx.coupon.update({ where: { id: coupon.id }, data: { ownerId: award.bid.userId } });
+        await tx.creditTransaction.create({
+          data: {
+            userId: award.bid.userId,
+            amount: -award.bid.amount,
+            type: 'COUPON_PURCHASE',
+            contractId: auction.contract.id,
+          },
+        });
         assigned++;
       }
 
