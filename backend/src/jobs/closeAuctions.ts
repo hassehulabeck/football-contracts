@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { settleAuctions, Award, SettleableAuction } from '../lib/settlement';
+import { sendAuctionResults, type AuctionOutcome } from '../lib/notifications';
 
 const prisma = new PrismaClient();
 
@@ -12,7 +13,7 @@ export async function closeExpiredAuctions() {
     orderBy: [{ endsAt: 'asc' }, { id: 'asc' }],
     include: {
       bids: true,
-      contract: { select: { id: true, couponCount: true } },
+      contract: { select: { id: true, couponCount: true, pattern: true, team: { select: { name: true } } } },
     },
   });
   if (expired.length === 0) return;
@@ -46,11 +47,18 @@ export async function closeExpiredAuctions() {
     else awardsByAuction.set(award.auctionId, [award]);
   }
 
+  // Bids that ended up charged and holding a coupon. Filled only once each
+  // auction's transaction has committed, so a rolled-back auction is never
+  // reported to anyone as won.
+  const chargedBidIds = new Set<string>();
+  const settled: typeof expired = [];
+
   for (const auction of expired) {
     console.log(`[closeAuctions] Closing auction ${auction.id}`);
 
-    await prisma.$transaction(async (tx) => {
+    const charged = await prisma.$transaction(async (tx) => {
       let assigned = 0;
+      const chargedHere: string[] = [];
 
       for (const award of awardsByAuction.get(auction.id) ?? []) {
         const coupon = await tx.coupon.findFirst({
@@ -82,6 +90,7 @@ export async function closeExpiredAuctions() {
             contractId: auction.contract.id,
           },
         });
+        chargedHere.push(award.bid.id);
         assigned++;
       }
 
@@ -94,8 +103,30 @@ export async function closeExpiredAuctions() {
           `from ${auction.bids.length} bids` +
           (unaffordable ? `, ${unaffordable} unaffordable` : ''),
       );
+      return chargedHere;
     });
+    charged.forEach((id) => chargedBidIds.add(id));
+    settled.push(auction);
   }
 
   console.log(`[closeAuctions] Closed ${expired.length} auction(s)`);
+
+  const outcomes = new Map<string, AuctionOutcome[]>();
+  for (const auction of settled) {
+    for (const bid of auction.bids) {
+      const outcome: AuctionOutcome = {
+        contractId: auction.contract.id,
+        team: auction.contract.team.name,
+        pattern: auction.contract.pattern,
+        bid: bid.amount,
+        won: chargedBidIds.has(bid.id),
+      };
+      outcomes.set(bid.userId, [...(outcomes.get(bid.userId) ?? []), outcome]);
+    }
+  }
+  try {
+    await sendAuctionResults(prisma, outcomes);
+  } catch (err) {
+    console.error('[closeAuctions] Result mail failed:', err);
+  }
 }

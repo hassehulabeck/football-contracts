@@ -11,6 +11,7 @@ import { findPatternWindow } from '../lib/fulfillment';
 import { seasonEndFor } from '../lib/season';
 
 import { COUPON_PAYOUT } from '../lib/ledger';
+import { sendPayouts, type Payout } from '../lib/notifications';
 
 const prisma = new PrismaClient();
 
@@ -48,6 +49,7 @@ export async function checkContractFulfillment() {
 
   let fulfilledCount = 0;
   let failedCount = 0;
+  const payouts = new Map<string, Payout[]>();
 
   for (const contract of contracts) {
     // Fulfilment is decided by the date a match was played, not by league round:
@@ -63,7 +65,9 @@ export async function checkContractFulfillment() {
     const window = findPatternWindow(matches, contract.pattern);
 
     if (window) {
-      await fulfillContract(contract.id);
+      const owners = await fulfillContract(contract.id);
+      const payout: Payout = { contractId: contract.id, team: contract.team.name, pattern: contract.pattern };
+      for (const owner of owners) payouts.set(owner, [...(payouts.get(owner) ?? []), payout]);
       fulfilledCount++;
     } else if (now > seasonEndFor(contract.team.league, contract.createdAt)) {
       // Only once the contract's own league season is over: Nov 30 for the
@@ -83,9 +87,16 @@ export async function checkContractFulfillment() {
     `[checkFulfillment] Evaluated ${contracts.length} open contracts — ` +
       `${fulfilledCount} fulfilled, ${failedCount} failed`,
   );
+
+  try {
+    await sendPayouts(prisma, payouts);
+  } catch (err) {
+    console.error('[checkFulfillment] Payout mail failed:', err);
+  }
 }
 
-async function fulfillContract(contractId: string) {
+/** Pays every coupon holder and returns their user ids, one per coupon. */
+async function fulfillContract(contractId: string): Promise<string[]> {
   const coupons = await prisma.coupon.findMany({
     where: { contractId, ownerId: { not: null }, paidOut: false },
   });
@@ -107,4 +118,5 @@ async function fulfillContract(contractId: string) {
   ]);
 
   console.log(`[checkFulfillment] Contract ${contractId} fulfilled — paid out ${coupons.length} coupons`);
+  return coupons.map((c) => c.ownerId!);
 }
