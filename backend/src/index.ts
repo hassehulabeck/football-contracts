@@ -13,6 +13,7 @@ import { leaderboardRoutes } from './routes/leaderboard';
 import { leagueRoutes } from './routes/leagues';
 import { adminRoutes } from './routes/admin';
 import { notificationRoutes } from './routes/notifications';
+import { feedbackRoutes } from './routes/feedback';
 import { registerJobs } from './jobs';
 
 const server = Fastify({ logger: true });
@@ -65,6 +66,7 @@ async function start() {
   await server.register(leagueRoutes, { prefix: '/api/leagues' });
   await server.register(adminRoutes, { prefix: '/api/admin' });
   await server.register(notificationRoutes, { prefix: '/api/notifications' });
+  await server.register(feedbackRoutes, { prefix: '/api/feedback' });
 
   registerJobs();
 

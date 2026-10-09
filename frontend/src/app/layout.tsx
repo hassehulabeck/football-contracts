@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Fraunces, Inter, JetBrains_Mono } from 'next/font/google';
 import { AuthProvider } from '@/lib/auth';
 import { Navbar } from '@/components/Navbar';
+import { Footer } from '@/components/Footer';
 import { UsernameGate } from '@/components/UsernameGate';
 import './globals.css';
 
@@ -24,6 +25,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <UsernameGate />
           <Navbar />
           <main className="flex-1">{children}</main>
+          <Footer />
         </AuthProvider>
       </body>
     </html>
