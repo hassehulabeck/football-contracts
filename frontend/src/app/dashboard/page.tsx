@@ -8,6 +8,7 @@ import { leagueStyle } from '@/lib/leagues';
 import { formatTeamName } from '@/lib/formatTeamName';
 import { TeamLogo } from '@/components/TeamLogo';
 import { StatTile } from '@/components/ui/StatTile';
+import { CreditHistory } from '@/components/CreditHistory';
 import type { Contract, ContractListResponse, LeaderboardEntry } from '@/types/api';
 
 interface MyCoupon {
@@ -279,6 +280,16 @@ export default function DashboardPage() {
           No bids or coupons yet — browse open contracts to get started.
         </p>
       )}
+
+      <section className="mb-10">
+        <div className="flex items-baseline justify-between mb-3">
+          <h2 className="text-sm font-bold text-orange-300 uppercase tracking-widest">Credit history</h2>
+          <Link href="/history" className="text-xs text-brand-400 hover:text-brand-300 transition-colors">
+            See all →
+          </Link>
+        </div>
+        <CreditHistory pageSize={8} />
+      </section>
 
       {openContracts.length > 0 && (
         <section className="mb-8">

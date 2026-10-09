@@ -3,6 +3,7 @@ import bcrypt from 'bcrypt';
 import { z } from 'zod';
 import crypto from 'crypto';
 import { sendActivationEmail, sendPasswordResetEmail } from '../lib/email';
+import { STARTING_CREDITS } from '../lib/ledger';
 
 const registerSchema = z.object({
   email: z.string().email(),
@@ -60,7 +61,14 @@ export async function authRoutes(server: FastifyInstance) {
     const activationToken = crypto.randomBytes(32).toString('hex');
 
     const user = await server.prisma.user.create({
-      data: { email: body.email, passwordHash, activationToken, activationTokenSentAt: new Date() },
+      data: {
+        email: body.email,
+        passwordHash,
+        activationToken,
+        activationTokenSentAt: new Date(),
+        credits: STARTING_CREDITS,
+        creditTransactions: { create: { amount: STARTING_CREDITS, type: 'STARTING_BALANCE' } },
+      },
     });
 
     await sendActivationEmail(user.email, activationToken);
