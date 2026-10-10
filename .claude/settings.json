@@ -17,5 +17,7 @@
       "Bash(npx prisma generate)",
       "Bash(npm run build)"
     ]
-  }
+  },
+  "enabledMcpjsonServers": ["playwright"]
+
 }
