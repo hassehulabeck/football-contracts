@@ -88,11 +88,11 @@ export default function NotificationSettingsPage() {
   const favouriteCount = prefs.favouriteLeagues.length + prefs.favouriteTeamIds.length;
 
   return (
-    <div className="max-w-2xl mx-auto px-6 py-10">
+    <div className="max-w-2xl mx-auto px-4 sm:px-6 py-10">
       <Link href="/settings" className="text-xs text-brand-400 hover:text-brand-300 transition-colors">
         ← Settings
       </Link>
-      <h1 className="text-5xl text-brand-500 mt-2 mb-2">Email notifications</h1>
+      <h1 className="text-4xl sm:text-5xl text-brand-500 mt-2 mb-2">Email notifications</h1>
       <p className="text-white/50 mb-8">Sent to {user.email}. Every mail has a link to switch it off.</p>
 
       <div className="rounded-xl border border-white/10 overflow-hidden mb-8">

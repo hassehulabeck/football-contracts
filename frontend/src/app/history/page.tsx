@@ -16,11 +16,11 @@ export default function HistoryPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-6 py-10">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10">
       <Link href="/dashboard" className="text-xs text-brand-400 hover:text-brand-300 transition-colors">
         ← Dashboard
       </Link>
-      <h1 className="text-5xl text-brand-500 mt-2 mb-2">Credit history</h1>
+      <h1 className="text-4xl sm:text-5xl text-brand-500 mt-2 mb-2">Credit history</h1>
       <p className="text-white/50 mb-8">
         Every change to your balance: coupons bought, contracts paid out, and any corrections.
       </p>

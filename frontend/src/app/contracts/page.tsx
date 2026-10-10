@@ -139,8 +139,8 @@ export default function ContractsPage() {
   const lastShown = Math.min(page * PAGE_SIZE, total);
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-10">
-      <h1 className="text-5xl text-brand-500 mb-2">Contracts</h1>
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
+      <h1 className="text-4xl sm:text-5xl text-brand-500 mb-2">Contracts</h1>
       <p className="text-white/50 mb-8">
         Bid on team performance contracts. New contracts every Wednesday at 03:00.{' '}
         <Link href="/rules" className="text-brand-400 hover:text-brand-300 transition-colors">
@@ -205,7 +205,7 @@ export default function ContractsPage() {
         <>
           <ContractTable contracts={contracts} />
 
-          <div className="flex items-center justify-between mt-6">
+          <div className="flex flex-wrap items-center justify-between gap-3 mt-6">
             <p className="text-white/25 text-xs tabular">
               Showing {firstShown}–{lastShown} of {total}
             </p>
@@ -255,14 +255,14 @@ function ContractTable({ contracts }: { contracts: Contract[] }) {
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-white/10 text-white/40 text-left">
-            <th className="px-4 py-3 font-medium">Team</th>
-            <th className="px-4 py-3 font-medium hidden sm:table-cell">League</th>
-            <th className="px-4 py-3 font-medium">Pattern</th>
-            <th className="px-4 py-3 font-medium">Status</th>
-            <th className="px-4 py-3 font-medium tabular hidden md:table-cell">Coupons</th>
-            <th className="px-4 py-3 font-medium tabular hidden md:table-cell">Bids</th>
-            <th className="px-4 py-3 font-medium">When</th>
-            <th className="px-4 py-3" />
+            <th className="px-2 sm:px-4 py-3 font-medium">Team</th>
+            <th className="px-2 sm:px-4 py-3 font-medium hidden sm:table-cell">League</th>
+            <th className="px-2 sm:px-4 py-3 font-medium">Pattern</th>
+            <th className="px-2 sm:px-4 py-3 font-medium hidden sm:table-cell">Status</th>
+            <th className="px-2 sm:px-4 py-3 font-medium tabular hidden lg:table-cell">Coupons</th>
+            <th className="px-2 sm:px-4 py-3 font-medium tabular hidden lg:table-cell">Bids</th>
+            <th className="px-2 sm:px-4 py-3 font-medium">When</th>
+            <th className="px-2 sm:px-4 py-3 hidden sm:table-cell" />
           </tr>
         </thead>
         <tbody>
@@ -276,33 +276,38 @@ function ContractTable({ contracts }: { contracts: Contract[] }) {
                 {/* The stripe carries the league on narrow screens, where the
                     League column below is hidden. */}
                 <td
-                  className={`px-4 py-3 font-semibold text-orange-100 border-l-2 ${leagueStyle(c.team.league).stripe}`}
+                  className={`px-2 sm:px-4 py-3 font-semibold text-orange-100 border-l-2 ${leagueStyle(c.team.league).stripe}`}
                 >
-                  <span className="inline-flex items-center gap-2">
+                  {/* The name is the link, so the row still leads somewhere on a
+                      phone, where the "View" column is hidden. */}
+                  <Link
+                    href={`/contracts/${c.id}`}
+                    className="inline-flex items-center gap-2 hover:text-brand-400 transition-colors"
+                  >
                     <TeamLogo externalId={c.team.externalId} />
                     {formatTeamName(c.team.name)}
-                  </span>
+                  </Link>
                 </td>
-                <td className="px-4 py-3 hidden sm:table-cell">
+                <td className="px-2 sm:px-4 py-3 hidden sm:table-cell">
                   <LeagueBadge league={c.team.league} />
                 </td>
-                <td className="px-4 py-3">
+                <td className="px-2 sm:px-4 py-3">
                   <span className="font-mono font-bold text-brand-400">{c.pattern}</span>
                   <span className="text-white/30 ml-2 hidden lg:inline text-xs">
                     {patternLabel(c.pattern)}
                   </span>
                 </td>
-                <td className={`px-4 py-3 font-semibold ${statusStyle.className}`}>
+                <td className={`px-2 sm:px-4 py-3 font-semibold hidden sm:table-cell ${statusStyle.className}`}>
                   {statusStyle.label}
                 </td>
-                <td className="px-4 py-3 tabular text-white/60 hidden md:table-cell">
+                <td className="px-2 sm:px-4 py-3 tabular text-white/60 hidden lg:table-cell">
                   {c.couponCount}
                 </td>
                 {/* Demand, read against the coupon supply in the column before it. */}
-                <td className="px-4 py-3 tabular text-white/60 hidden md:table-cell">
+                <td className="px-2 sm:px-4 py-3 tabular text-white/60 hidden lg:table-cell">
                   {c.auction?.bidCount ?? '—'}
                 </td>
-                <td className="px-4 py-3 tabular text-white/40">
+                <td className="px-2 sm:px-4 py-3 tabular text-white/40 whitespace-nowrap">
                   {c.status === 'ACTIVE' && c.auction && !c.auction.closed ? (
                     <span className="text-brand-400 font-semibold">
                       {timeRemaining(c.auction.endsAt)}
@@ -313,7 +318,7 @@ function ContractTable({ contracts }: { contracts: Contract[] }) {
                     formatDay(c.createdAt)
                   )}
                 </td>
-                <td className="px-4 py-3 text-right">
+                <td className="px-2 sm:px-4 py-3 text-right whitespace-nowrap hidden sm:table-cell">
                   <Link
                     href={`/contracts/${c.id}`}
                     className="text-brand-400 hover:text-brand-300 font-bold text-xs uppercase tracking-wide transition-colors"

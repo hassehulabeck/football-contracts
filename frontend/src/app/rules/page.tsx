@@ -16,8 +16,8 @@ const EXAMPLE_PATTERNS = ['WWW', 'LLL', 'WDL', 'LDW', 'DDD', 'DLD'];
 
 export default function RulesPage() {
   return (
-    <div className="max-w-3xl mx-auto px-6 py-10">
-      <h1 className="text-5xl text-brand-500 mb-2">Rules</h1>
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-10">
+      <h1 className="text-4xl sm:text-5xl text-brand-500 mb-2">Rules</h1>
       <p className="text-white/50 mb-12">
         Everything about how the game works — including the parts you cannot see from the
         outside.
@@ -90,14 +90,14 @@ export default function RulesPage() {
           equally likely: WWW and LLL come up most often, WDL and LDW nearly as often, and
           every other pattern is rarer. A few of them:
         </p>
-        <div className="rounded-xl border border-white/10 overflow-hidden mt-4">
+        <div className="rounded-xl border border-white/10 overflow-x-auto mt-4">
           <table className="w-full text-sm">
             <tbody>
               {EXAMPLE_PATTERNS.map((code) => (
                 <tr key={code} className="border-b border-white/5 last:border-0">
-                  <td className="px-4 py-3 font-mono font-black text-brand-400 w-20">{code}</td>
-                  <td className="px-4 py-3 text-orange-100">{patternLabel(code)}</td>
-                  <td className="px-4 py-3 text-white/40 text-xs hidden sm:table-cell">
+                  <td className="px-2 sm:px-4 py-3 font-mono font-black text-brand-400 w-20">{code}</td>
+                  <td className="px-2 sm:px-4 py-3 text-orange-100">{patternLabel(code)}</td>
+                  <td className="px-2 sm:px-4 py-3 text-white/40 text-xs hidden sm:table-cell">
                     {patternDescription(code)}
                   </td>
                 </tr>

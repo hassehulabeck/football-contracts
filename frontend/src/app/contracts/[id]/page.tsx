@@ -112,7 +112,7 @@ export default function ContractDetailPage() {
 
   if (!contract) {
     return (
-      <div className="max-w-2xl mx-auto px-6 py-20 text-center">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-20 text-center">
         <p className="text-white/50">Contract not found.</p>
         <Link href="/contracts" className="text-brand-400 hover:text-brand-300 text-sm mt-4 inline-block">
           ← Back to contracts
@@ -127,7 +127,7 @@ export default function ContractDetailPage() {
     !contract.auction.closed;
 
   return (
-    <div className="max-w-2xl mx-auto px-6 py-10">
+    <div className="max-w-2xl mx-auto px-4 sm:px-6 py-10">
       <Link href="/contracts" className="text-white/30 hover:text-white/60 text-sm transition-colors mb-6 inline-block">
         ← Contracts
       </Link>
@@ -135,8 +135,8 @@ export default function ContractDetailPage() {
       <div className="mb-3">
         <LeagueBadge league={contract.team.league} />
       </div>
-      <h1 className="text-4xl font-black text-brand-500 mb-1 flex items-center gap-3">
-        <TeamLogo externalId={contract.team.externalId} className="w-8 h-8" />
+      <h1 className="text-3xl sm:text-4xl font-black text-brand-500 mb-1 flex items-center gap-3">
+        <TeamLogo externalId={contract.team.externalId} className="w-8 h-8 shrink-0" />
         {formatTeamName(contract.team.name)}
       </h1>
       <p className="text-orange-200 text-xl mb-8">{patternDescription(contract.pattern)}</p>
@@ -149,7 +149,7 @@ export default function ContractDetailPage() {
       </div>
 
       {contract.status === 'FULFILLED' && (
-        <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-6 mb-6">
+        <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4 sm:p-6 mb-6">
           <h2 className="text-green-400 text-xs uppercase tracking-widest mb-1 font-bold">
             Fulfilled
           </h2>
@@ -164,7 +164,7 @@ export default function ContractDetailPage() {
               <p className="text-white/50 text-sm mb-3">
                 These three matches completed the pattern:
               </p>
-              <div className="rounded-lg border border-white/10 overflow-hidden mb-4">
+              <div className="rounded-lg border border-white/10 overflow-x-auto mb-4">
                 <table className="w-full text-sm">
                   <tbody>
                     {contract.fulfillment.matches.map((m, i) => (
@@ -191,7 +191,7 @@ export default function ContractDetailPage() {
       )}
 
       {contract.status === 'FAILED' && (
-        <div className="bg-white/5 border border-white/10 rounded-xl p-6 mb-6">
+        <div className="bg-white/5 border border-white/10 rounded-xl p-4 sm:p-6 mb-6">
           <h2 className="text-red-400 text-xs uppercase tracking-widest mb-1 font-bold">
             Failed
           </h2>
@@ -208,7 +208,7 @@ export default function ContractDetailPage() {
       )}
 
       {contract.status === 'CLOSED' && (
-        <div className="bg-white/5 border border-white/10 rounded-xl p-6 mb-6">
+        <div className="bg-white/5 border border-white/10 rounded-xl p-4 sm:p-6 mb-6">
           <h2 className="text-white/40 text-xs uppercase tracking-widest mb-2 font-bold">
             Awaiting result
           </h2>
@@ -224,14 +224,14 @@ export default function ContractDetailPage() {
       )}
 
       {contract.auction && (
-        <div className="bg-white/5 border border-white/10 rounded-xl p-6 mb-6">
+        <div className="bg-white/5 border border-white/10 rounded-xl p-4 sm:p-6 mb-6">
           <h2 className="text-white/40 text-xs uppercase tracking-widest mb-4">Auction</h2>
 
           {/* Two figures while bidding is open, three once it has settled —
               the winning bid only exists to be shown after the fact. */}
           <div
             className={`grid gap-4 mb-4 ${
-              contract.auction.closed ? 'grid-cols-3' : 'grid-cols-2'
+              contract.auction.closed ? 'grid-cols-2 sm:grid-cols-3' : 'grid-cols-2'
             }`}
           >
             <div>
@@ -286,7 +286,7 @@ export default function ContractDetailPage() {
             <div className="border-t border-white/10 pt-4">
               {user ? (
                 <>
-                  <div className="flex items-center justify-between mb-3">
+                  <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 mb-3">
                     <h3 className="text-white/40 text-xs uppercase tracking-widest">
                       {myBid ? 'Update your bid' : 'Place your bid'}
                     </h3>
@@ -305,7 +305,7 @@ export default function ContractDetailPage() {
                       onChange={(e) => setBidAmount(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && placeBid()}
                       placeholder="Credits"
-                      className="flex-1 bg-white/5 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-white/20 focus:outline-hidden focus:border-brand-500 tabular"
+                      className="flex-1 min-w-0 bg-white/5 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-white/20 focus:outline-hidden focus:border-brand-500 tabular"
                     />
                     <button
                       onClick={placeBid}
