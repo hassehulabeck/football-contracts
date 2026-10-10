@@ -23,7 +23,7 @@ export function MatchRow({ match }: { match: FulfillmentMatch }) {
 
   return (
     <tr className="border-b border-white/5 last:border-0">
-      <td className="px-3 py-2.5 w-10">
+      <td className="px-2 sm:px-3 py-2.5 w-10">
         <span
           className={`inline-flex items-center justify-center w-6 h-6 rounded border font-mono font-bold text-xs ${
             RESULT_STYLE[match.result] ?? RESULT_STYLE.D
@@ -32,19 +32,19 @@ export function MatchRow({ match }: { match: FulfillmentMatch }) {
           {match.result}
         </span>
       </td>
-      <td className="px-3 py-2.5 tabular text-white/40 text-xs whitespace-nowrap">
+      <td className="px-2 sm:px-3 py-2.5 tabular text-white/40 text-xs whitespace-nowrap">
         {new Date(match.playedAt).toLocaleDateString('sv-SE', {
           month: 'short',
           day: 'numeric',
         })}
       </td>
-      <td className="px-3 py-2.5 tabular font-bold text-orange-100 whitespace-nowrap">
+      <td className="px-2 sm:px-3 py-2.5 tabular font-bold text-orange-100 whitespace-nowrap">
         {own}–{other}
       </td>
-      <td className="px-3 py-2.5 text-white/50">
+      <td className="px-2 sm:px-3 py-2.5 text-white/50">
         {match.opponent ? (
           <span className="inline-flex items-center gap-1.5">
-            <span className="text-white/30">vs</span>
+            <span className="text-white/30 hidden sm:inline">vs</span>
             <TeamLogo externalId={match.opponentTeamId} className="w-3.5 h-3.5" />
             {formatTeamName(match.opponent)}
           </span>
@@ -52,9 +52,19 @@ export function MatchRow({ match }: { match: FulfillmentMatch }) {
           <span className="text-white/25">Opponent unknown</span>
         )}
       </td>
-      <td className="px-3 py-2.5 text-white/30 text-xs text-right">
-        {match.isHome ? 'Home' : 'Away'}
+      <td className="px-2 sm:px-3 py-2.5 text-white/30 text-xs text-right">
+        <HomeAway isHome={match.isHome} />
       </td>
     </tr>
+  );
+}
+
+/** "Home"/"Away", shortened to H/A on a phone so the row fits without scrolling. */
+export function HomeAway({ isHome }: { isHome: boolean }) {
+  return (
+    <>
+      <span className="sm:hidden">{isHome ? 'H' : 'A'}</span>
+      <span className="hidden sm:inline">{isHome ? 'Home' : 'Away'}</span>
+    </>
   );
 }

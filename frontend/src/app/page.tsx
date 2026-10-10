@@ -60,7 +60,7 @@ export default function Home() {
       </section>
 
       {/* How it works */}
-      <section className="border-t border-white/10 px-6 py-16 max-w-4xl mx-auto">
+      <section className="border-t border-white/10 px-4 sm:px-6 py-16 max-w-4xl mx-auto">
         <h2 className="text-3xl text-orange-200 mb-10 text-center">How it works</h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
           {HOW_IT_WORKS.map(({ step, title, body }) => (
@@ -84,7 +84,7 @@ export default function Home() {
       </section>
 
       {/* Patterns */}
-      <section className="border-t border-white/10 px-6 py-16 max-w-4xl mx-auto">
+      <section className="border-t border-white/10 px-4 sm:px-6 py-16 max-w-4xl mx-auto">
         <h2 className="text-3xl text-orange-200 mb-2 text-center">Contract patterns</h2>
         <p className="text-white/40 text-sm text-center mb-8">
           Any three results in a row, in order — wins, draws and losses in every mix. A contract stays open until the pattern appears anywhere in the team's results for the rest of the season — or until the season ends. Some examples:
@@ -103,7 +103,7 @@ export default function Home() {
       </section>
 
       {/* CTA footer */}
-      <section className="border-t border-white/10 px-6 py-16 text-center">
+      <section className="border-t border-white/10 px-4 sm:px-6 py-16 text-center">
         <p className="text-white/40 text-sm mb-4">Free to play. No payment required.</p>
         <Link
           href="/auth/register"

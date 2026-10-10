@@ -64,8 +64,8 @@ export default function LeaderboardPage() {
   const showProfit = board !== 'credits';
 
   return (
-    <div className="max-w-2xl mx-auto px-6 py-10">
-      <h1 className="text-5xl text-brand-500 mb-6">Leaderboard</h1>
+    <div className="max-w-2xl mx-auto px-4 sm:px-6 py-10">
+      <h1 className="text-4xl sm:text-5xl text-brand-500 mb-6">Leaderboard</h1>
 
       <div className="flex gap-1 mb-4 border-b border-white/10">
         {TABS.map((t) => (
@@ -119,14 +119,14 @@ export default function LeaderboardPage() {
       ) : entries.length === 0 ? (
         <p className="text-white/30 text-center py-16">No players yet — be the first to register.</p>
       ) : (
-        <div className="rounded-xl border border-white/10 overflow-hidden">
+        <div className="rounded-xl border border-white/10 overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-white/10 text-white/40 text-left">
-                <th className="px-4 py-3 font-medium w-12">#</th>
-                <th className="px-4 py-3 font-medium">Player</th>
-                {showProfit && <th className="px-4 py-3 font-medium tabular text-right">Profit</th>}
-                <th className="px-4 py-3 font-medium tabular text-right">Credits</th>
+                <th className="px-2 sm:px-4 py-3 font-medium w-12">#</th>
+                <th className="px-2 sm:px-4 py-3 font-medium">Player</th>
+                {showProfit && <th className="px-2 sm:px-4 py-3 font-medium tabular text-right">Profit</th>}
+                <th className="px-2 sm:px-4 py-3 font-medium tabular text-right">Credits</th>
               </tr>
             </thead>
             <tbody>
@@ -141,8 +141,8 @@ export default function LeaderboardPage() {
                       isMe ? 'bg-brand-500/10 border-brand-500/20' : 'hover:bg-white/3'
                     }`}
                   >
-                    <td className="px-4 py-3 tabular text-white/40 font-semibold">{medal ?? i + 1}</td>
-                    <td className="px-4 py-3">
+                    <td className="px-2 sm:px-4 py-3 tabular text-white/40 font-semibold">{medal ?? i + 1}</td>
+                    <td className="px-2 sm:px-4 py-3">
                       <span className={`font-semibold ${isMe ? 'text-orange-200' : 'text-orange-100'}`}>
                         {entry.displayName}
                       </span>
@@ -154,7 +154,7 @@ export default function LeaderboardPage() {
                     </td>
                     {showProfit && (
                       <td
-                        className={`px-4 py-3 tabular text-right font-black text-base ${
+                        className={`px-2 sm:px-4 py-3 tabular text-right font-black text-base ${
                           profit > 0 ? 'text-green-400' : profit < 0 ? 'text-orange-300' : 'text-white/40'
                         }`}
                       >
@@ -162,7 +162,7 @@ export default function LeaderboardPage() {
                       </td>
                     )}
                     <td
-                      className={`px-4 py-3 tabular text-right ${
+                      className={`px-2 sm:px-4 py-3 tabular text-right ${
                         showProfit ? 'text-white/50' : 'font-black text-brand-400 text-base'
                       }`}
                     >

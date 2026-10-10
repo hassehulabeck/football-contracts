@@ -105,11 +105,11 @@ export default function DashboardPage() {
   const lostBids = me?.lostBids ?? [];
 
   return (
-    <div className="max-w-4xl mx-auto px-6 py-10">
-      <h1 className="text-5xl text-brand-500 mb-2">Dashboard</h1>
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10">
+      <h1 className="text-4xl sm:text-5xl text-brand-500 mb-2">Dashboard</h1>
       <p className="text-white/50 mb-10">{user.email}</p>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
+      <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-10">
         <StatTile label="Credits" value={user.credits.toLocaleString()} />
         <StatTile label="Live coupons" value={me ? String(liveCoupons.length) : '—'} />
         <StatTile label="Rank" value={rank ? `#${rank}` : '—'} />
@@ -120,21 +120,21 @@ export default function DashboardPage() {
           <h2 className="text-sm font-bold text-orange-300 uppercase tracking-widest mb-3">
             Active bids
           </h2>
-          <div className="rounded-xl border border-white/10 overflow-hidden">
+          <div className="rounded-xl border border-white/10 overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-white/10 text-white/40 text-left">
-                  <th className="px-4 py-3 font-medium">Team</th>
-                  <th className="px-4 py-3 font-medium">Pattern</th>
-                  <th className="px-4 py-3 font-medium tabular">Your bid</th>
-                  <th className="px-4 py-3 font-medium">Closes in</th>
+                  <th className="px-2 sm:px-4 py-3 font-medium">Team</th>
+                  <th className="px-2 sm:px-4 py-3 font-medium">Pattern</th>
+                  <th className="px-2 sm:px-4 py-3 font-medium tabular">Your bid</th>
+                  <th className="px-2 sm:px-4 py-3 font-medium">Closes in</th>
                 </tr>
               </thead>
               <tbody>
                 {activeBids.map((bid) => (
                   <tr key={bid.auction.id} className="border-b border-white/5 last:border-0">
                     <td
-                      className={`px-4 py-3 font-semibold text-orange-100 border-l-2 ${
+                      className={`px-2 sm:px-4 py-3 font-semibold text-orange-100 border-l-2 ${
                         leagueStyle(bid.auction.contract.team.league).stripe
                       }`}
                     >
@@ -146,13 +146,13 @@ export default function DashboardPage() {
                         {formatTeamName(bid.auction.contract.team.name)}
                       </Link>
                     </td>
-                    <td className="px-4 py-3 font-mono font-bold text-brand-400">
+                    <td className="px-2 sm:px-4 py-3 font-mono font-bold text-brand-400">
                       {bid.auction.contract.pattern}
                     </td>
-                    <td className="px-4 py-3 tabular font-bold text-orange-200">
+                    <td className="px-2 sm:px-4 py-3 tabular font-bold text-orange-200 whitespace-nowrap">
                       {bid.amount.toLocaleString()} cr
                     </td>
-                    <td className="px-4 py-3 tabular text-brand-400 font-semibold">
+                    <td className="px-2 sm:px-4 py-3 tabular text-brand-400 font-semibold whitespace-nowrap">
                       {timeRemaining(bid.auction.endsAt)}
                     </td>
                   </tr>
@@ -168,22 +168,22 @@ export default function DashboardPage() {
           <h2 className="text-sm font-bold text-orange-300 uppercase tracking-widest mb-3">
             Your coupons
           </h2>
-          <div className="rounded-xl border border-white/10 overflow-hidden">
+          <div className="rounded-xl border border-white/10 overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-white/10 text-white/40 text-left">
-                  <th className="px-4 py-3 font-medium">Team</th>
-                  <th className="px-4 py-3 font-medium">Pattern</th>
-                  <th className="px-4 py-3 font-medium">Status</th>
-                  <th className="px-4 py-3 font-medium tabular">Paid</th>
-                  <th className="px-4 py-3 font-medium tabular">Payout</th>
+                  <th className="px-2 sm:px-4 py-3 font-medium">Team</th>
+                  <th className="px-2 sm:px-4 py-3 font-medium">Pattern</th>
+                  <th className="px-2 sm:px-4 py-3 font-medium hidden sm:table-cell">Status</th>
+                  <th className="px-2 sm:px-4 py-3 font-medium tabular">Paid</th>
+                  <th className="px-2 sm:px-4 py-3 font-medium tabular">Payout</th>
                 </tr>
               </thead>
               <tbody>
                 {me.coupons.slice(0, 20).map((coupon) => (
                   <tr key={coupon.id} className="border-b border-white/5 last:border-0">
                     <td
-                      className={`px-4 py-3 font-semibold text-orange-100 border-l-2 ${
+                      className={`px-2 sm:px-4 py-3 font-semibold text-orange-100 border-l-2 ${
                         leagueStyle(coupon.contract.team.league).stripe
                       }`}
                     >
@@ -195,16 +195,16 @@ export default function DashboardPage() {
                         {formatTeamName(coupon.contract.team.name)}
                       </Link>
                     </td>
-                    <td className="px-4 py-3 font-mono font-bold text-brand-400">
+                    <td className="px-2 sm:px-4 py-3 font-mono font-bold text-brand-400">
                       {coupon.contract.pattern}
                     </td>
-                    <td className="px-4 py-3 text-white/50 capitalize">
+                    <td className="px-2 sm:px-4 py-3 text-white/50 capitalize hidden sm:table-cell">
                       {coupon.contract.status.toLowerCase()}
                     </td>
-                    <td className="px-4 py-3 tabular text-orange-100">
+                    <td className="px-2 sm:px-4 py-3 tabular text-orange-100 whitespace-nowrap">
                       {coupon.pricePaid != null ? `${coupon.pricePaid.toLocaleString()} cr` : '—'}
                     </td>
-                    <td className="px-4 py-3 tabular">
+                    <td className="px-2 sm:px-4 py-3 tabular">
                       {coupon.paidOut ? (
                         <span className="text-green-400 font-semibold">+100 cr</span>
                       ) : (
@@ -224,21 +224,21 @@ export default function DashboardPage() {
           <h2 className="text-sm font-bold text-orange-300 uppercase tracking-widest mb-3">
             Lost contracts
           </h2>
-          <div className="rounded-xl border border-white/10 overflow-hidden">
+          <div className="rounded-xl border border-white/10 overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-white/10 text-white/40 text-left">
-                  <th className="px-4 py-3 font-medium">Team</th>
-                  <th className="px-4 py-3 font-medium">Pattern</th>
-                  <th className="px-4 py-3 font-medium tabular">Your bid</th>
-                  <th className="px-4 py-3 font-medium">Closed</th>
+                  <th className="px-2 sm:px-4 py-3 font-medium">Team</th>
+                  <th className="px-2 sm:px-4 py-3 font-medium">Pattern</th>
+                  <th className="px-2 sm:px-4 py-3 font-medium tabular">Your bid</th>
+                  <th className="px-2 sm:px-4 py-3 font-medium">Closed</th>
                 </tr>
               </thead>
               <tbody>
                 {lostBids.slice(0, 20).map((bid) => (
                   <tr key={bid.auction.id} className="border-b border-white/5 last:border-0">
                     <td
-                      className={`px-4 py-3 font-semibold text-white/50 border-l-2 ${
+                      className={`px-2 sm:px-4 py-3 font-semibold text-white/50 border-l-2 ${
                         leagueStyle(bid.auction.contract.team.league).stripe
                       }`}
                     >
@@ -256,13 +256,13 @@ export default function DashboardPage() {
                         {formatTeamName(bid.auction.contract.team.name)}
                       </Link>
                     </td>
-                    <td className="px-4 py-3 font-mono font-bold text-white/40">
+                    <td className="px-2 sm:px-4 py-3 font-mono font-bold text-white/40">
                       {bid.auction.contract.pattern}
                     </td>
-                    <td className="px-4 py-3 tabular text-white/40">
+                    <td className="px-2 sm:px-4 py-3 tabular text-white/40 whitespace-nowrap">
                       {bid.amount.toLocaleString()} cr
                     </td>
-                    <td className="px-4 py-3 tabular text-white/30">
+                    <td className="px-2 sm:px-4 py-3 tabular text-white/30 whitespace-nowrap">
                       {formatDay(bid.auction.endsAt)}
                     </td>
                   </tr>
@@ -302,32 +302,35 @@ export default function DashboardPage() {
               See all →
             </Link>
           </div>
-          <div className="rounded-xl border border-white/10 overflow-hidden">
+          <div className="rounded-xl border border-white/10 overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-white/10 text-white/40 text-left">
-                  <th className="px-4 py-3 font-medium">Team</th>
-                  <th className="px-4 py-3 font-medium">Pattern</th>
-                  <th className="px-4 py-3 font-medium">Closes in</th>
-                  <th className="px-4 py-3" />
+                  <th className="px-2 sm:px-4 py-3 font-medium">Team</th>
+                  <th className="px-2 sm:px-4 py-3 font-medium">Pattern</th>
+                  <th className="px-2 sm:px-4 py-3 font-medium">Closes in</th>
+                  <th className="px-2 sm:px-4 py-3 hidden sm:table-cell" />
                 </tr>
               </thead>
               <tbody>
                 {openContracts.map((c) => (
                   <tr key={c.id} className="border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors">
                     <td
-                      className={`px-4 py-3 font-semibold text-orange-100 border-l-2 ${leagueStyle(c.team.league).stripe}`}
+                      className={`px-2 sm:px-4 py-3 font-semibold text-orange-100 border-l-2 ${leagueStyle(c.team.league).stripe}`}
                     >
-                      <span className="inline-flex items-center gap-2">
+                      <Link
+                        href={`/contracts/${c.id}`}
+                        className="inline-flex items-center gap-2 hover:text-brand-400 transition-colors"
+                      >
                         <TeamLogo externalId={c.team.externalId} />
                         {formatTeamName(c.team.name)}
-                      </span>
+                      </Link>
                     </td>
-                    <td className="px-4 py-3 font-mono font-bold text-brand-400">{c.pattern}</td>
-                    <td className="px-4 py-3 tabular text-brand-400 font-semibold">
+                    <td className="px-2 sm:px-4 py-3 font-mono font-bold text-brand-400">{c.pattern}</td>
+                    <td className="px-2 sm:px-4 py-3 tabular text-brand-400 font-semibold whitespace-nowrap">
                       {c.auction ? timeRemaining(c.auction.endsAt) : '—'}
                     </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-2 sm:px-4 py-3 text-right whitespace-nowrap hidden sm:table-cell">
                       <Link
                         href={`/contracts/${c.id}`}
                         className="text-brand-400 hover:text-brand-300 font-bold text-xs uppercase tracking-wide transition-colors"

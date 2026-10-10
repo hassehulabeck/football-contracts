@@ -41,28 +41,28 @@ export function BatchSettingsTable() {
   const total = leagues.reduce((sum, c) => sum + c.contractsPerWeek, 0);
 
   return (
-    <div className="rounded-xl border border-white/10 overflow-hidden mt-4">
+    <div className="rounded-xl border border-white/10 overflow-x-auto mt-4">
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-white/10 text-left text-white/40 text-xs uppercase tracking-wide">
-            <th className="px-4 py-2 font-semibold">League</th>
-            <th className="px-4 py-2 font-semibold text-right">Contracts / week</th>
-            <th className="px-4 py-2 font-semibold text-right">Coupons each</th>
+            <th className="px-2 sm:px-4 py-2 font-semibold">League</th>
+            <th className="px-2 sm:px-4 py-2 font-semibold text-right">Contracts / week</th>
+            <th className="px-2 sm:px-4 py-2 font-semibold text-right">Coupons each</th>
           </tr>
         </thead>
         <tbody>
           {leagues.map((c) => (
             <tr key={c.league} className="border-b border-white/5">
-              <td className="px-4 py-2.5">
+              <td className="px-2 sm:px-4 py-2.5">
                 <LeagueBadge league={c.league} />
               </td>
-              <td className="px-4 py-2.5 text-right tabular text-orange-100">{c.contractsPerWeek}</td>
-              <td className="px-4 py-2.5 text-right tabular text-orange-100">{c.couponCount}</td>
+              <td className="px-2 sm:px-4 py-2.5 text-right tabular text-orange-100">{c.contractsPerWeek}</td>
+              <td className="px-2 sm:px-4 py-2.5 text-right tabular text-orange-100">{c.couponCount}</td>
             </tr>
           ))}
           <tr>
-            <td className="px-4 py-2.5 text-white/50">Total</td>
-            <td className="px-4 py-2.5 text-right tabular font-semibold text-brand-400">{total}</td>
+            <td className="px-2 sm:px-4 py-2.5 text-white/50">Total</td>
+            <td className="px-2 sm:px-4 py-2.5 text-right tabular font-semibold text-brand-400">{total}</td>
             <td />
           </tr>
         </tbody>

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { formatTeamName } from '@/lib/formatTeamName';
-import { MatchRow } from '@/components/MatchRow';
+import { HomeAway, MatchRow } from '@/components/MatchRow';
 import { TeamLogo } from '@/components/TeamLogo';
 import type { ScheduleFixture, TeamScheduleData } from '@/types/api';
 
@@ -49,14 +49,14 @@ function Section<T>({
   const hidden = rows.length - shown.length;
 
   return (
-    <section className="bg-white/5 border border-white/10 rounded-xl p-6">
+    <section className="min-w-0 bg-white/5 border border-white/10 rounded-xl p-4 sm:p-6">
       <h2 className="text-white/40 text-xs uppercase tracking-widest mb-4">{title}</h2>
 
       {rows.length === 0 ? (
         <p className="text-white/25 text-sm">{empty}</p>
       ) : (
         <>
-          <div className="rounded-lg border border-white/10 overflow-hidden">
+          <div className="rounded-lg border border-white/10 overflow-x-auto">
             <table className="w-full text-sm">
               <tbody>{shown.map(render)}</tbody>
             </table>
@@ -85,13 +85,13 @@ function FixtureRow({ fixture }: { fixture: ScheduleFixture }) {
 
   return (
     <tr className="border-b border-white/5 last:border-0">
-      <td className="px-3 py-2.5 tabular text-white/40 text-xs whitespace-nowrap">
+      <td className="px-2 sm:px-3 py-2.5 tabular text-white/40 text-xs whitespace-nowrap">
         {new Date(fixture.kickoffAt).toLocaleDateString('sv-SE', {
           month: 'short',
           day: 'numeric',
         })}
       </td>
-      <td className="px-3 py-2.5 tabular text-white/30 text-xs whitespace-nowrap">
+      <td className="px-2 sm:px-3 py-2.5 tabular text-white/30 text-xs whitespace-nowrap">
         {/* A TBD fixture still carries a date, so the time can be a placeholder
             00:00. Shown anyway — it is what the API knows. */}
         {new Date(fixture.kickoffAt).toLocaleTimeString('sv-SE', {
@@ -99,10 +99,10 @@ function FixtureRow({ fixture }: { fixture: ScheduleFixture }) {
           minute: '2-digit',
         })}
       </td>
-      <td className={`px-3 py-2.5 ${off ? 'text-white/30 line-through' : 'text-white/50'}`}>
+      <td className={`px-2 sm:px-3 py-2.5 ${off ? 'text-white/30 line-through' : 'text-white/50'}`}>
         {fixture.opponent ? (
           <span className="inline-flex items-center gap-1.5">
-            <span className="text-white/30">vs</span>
+            <span className="text-white/30 hidden sm:inline">vs</span>
             <TeamLogo externalId={fixture.opponentTeamId} className="w-3.5 h-3.5" />
             {formatTeamName(fixture.opponent)}
           </span>
@@ -110,13 +110,15 @@ function FixtureRow({ fixture }: { fixture: ScheduleFixture }) {
           <span className="text-white/25">Opponent unknown</span>
         )}
       </td>
-      <td className="px-3 py-2.5 text-right whitespace-nowrap">
+      <td className="px-2 sm:px-3 py-2.5 text-right whitespace-nowrap">
         {off ? (
           <span className="text-orange-300/70 text-xs font-semibold uppercase tracking-wide">
             {FIXTURE_STATUS_LABEL[fixture.status]}
           </span>
         ) : (
-          <span className="text-white/30 text-xs">{fixture.isHome ? 'Home' : 'Away'}</span>
+          <span className="text-white/30 text-xs">
+            <HomeAway isHome={fixture.isHome} />
+          </span>
         )}
       </td>
     </tr>

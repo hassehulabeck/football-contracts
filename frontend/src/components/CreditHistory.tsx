@@ -52,26 +52,26 @@ export function CreditHistory({ pageSize, paged = false }: { pageSize: number; p
 
   return (
     <>
-      <div className="rounded-xl border border-white/10 overflow-hidden">
+      <div className="rounded-xl border border-white/10 overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-white/10 text-white/40 text-left">
-              <th className="px-4 py-3 font-medium">Date</th>
-              <th className="px-4 py-3 font-medium">What</th>
-              <th className="px-4 py-3 font-medium hidden sm:table-cell">Contract</th>
-              <th className="px-4 py-3 font-medium tabular text-right">Credits</th>
+              <th className="px-2 sm:px-4 py-3 font-medium">Date</th>
+              <th className="px-2 sm:px-4 py-3 font-medium">What</th>
+              <th className="px-2 sm:px-4 py-3 font-medium hidden sm:table-cell">Contract</th>
+              <th className="px-2 sm:px-4 py-3 font-medium tabular text-right">Credits</th>
             </tr>
           </thead>
           <tbody>
             {rows.map((t) => (
               <tr key={t.id} className="border-b border-white/5 last:border-0">
-                <td className="px-4 py-3 tabular text-white/50 whitespace-nowrap">{formatDate(t.createdAt)}</td>
-                <td className="px-4 py-3 text-orange-100">
+                <td className="px-2 sm:px-4 py-3 tabular text-white/50 whitespace-nowrap">{formatDate(t.createdAt)}</td>
+                <td className="px-2 sm:px-4 py-3 text-orange-100">
                   {LABELS[t.type]}
                   {t.note && <span className="block text-xs text-white/30">{t.note}</span>}
                 </td>
                 <td
-                  className={`px-4 py-3 hidden sm:table-cell ${
+                  className={`px-2 sm:px-4 py-3 hidden sm:table-cell ${
                     t.contract ? `border-l-2 ${leagueStyle(t.contract.team.league).stripe}` : ''
                   }`}
                 >
@@ -89,7 +89,7 @@ export function CreditHistory({ pageSize, paged = false }: { pageSize: number; p
                   )}
                 </td>
                 <td
-                  className={`px-4 py-3 tabular text-right font-semibold whitespace-nowrap ${
+                  className={`px-2 sm:px-4 py-3 tabular text-right font-semibold whitespace-nowrap ${
                     t.amount >= 0 ? 'text-green-400' : 'text-orange-200'
                   }`}
                 >

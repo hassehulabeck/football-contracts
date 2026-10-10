@@ -90,12 +90,12 @@ export function ContractFilters({
       </div>
 
       <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-        <label className="flex items-center gap-2 text-xs text-white/40">
-          <span className="uppercase tracking-widest">Status</span>
+        <label className="flex w-full sm:w-auto items-center gap-2 text-xs text-white/40">
+          <span className="uppercase tracking-widest w-14 sm:w-auto">Status</span>
           <select
             value={status}
             onChange={(e) => onStatusChange(e.target.value as StatusFilter)}
-            className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-orange-100 focus:outline-hidden focus:border-brand-500"
+            className="flex-1 sm:flex-none min-w-0 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-base sm:text-sm text-orange-100 focus:outline-hidden focus:border-brand-500"
           >
             {STATUS_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>
@@ -105,12 +105,12 @@ export function ContractFilters({
           </select>
         </label>
 
-        <label className="flex items-center gap-2 text-xs text-white/40">
-          <span className="uppercase tracking-widest">Team</span>
+        <label className="flex w-full sm:w-auto items-center gap-2 text-xs text-white/40">
+          <span className="uppercase tracking-widest w-14 sm:w-auto">Team</span>
           <select
             value={teamId}
             onChange={(e) => onTeamChange(e.target.value)}
-            className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-orange-100 focus:outline-hidden focus:border-brand-500 max-w-56"
+            className="flex-1 sm:flex-none min-w-0 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-base sm:text-sm text-orange-100 focus:outline-hidden focus:border-brand-500 sm:max-w-56"
           >
             <option value="ALL">All teams</option>
             {/* Grouped by league, not a flat list. Dropping the " W" suffix

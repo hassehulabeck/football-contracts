@@ -92,9 +92,9 @@ export default function AdminPage() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-10">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
       <div className="flex items-baseline justify-between mb-2">
-        <h1 className="text-5xl text-brand-500">Admin</h1>
+        <h1 className="text-4xl sm:text-5xl text-brand-500">Admin</h1>
         <Link href="/admin/users" className="text-sm text-brand-400 hover:text-brand-300 transition-colors">
           Players →
         </Link>
@@ -121,15 +121,15 @@ export default function AdminPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-white/10 text-left text-white/50 text-xs uppercase tracking-wide">
-              <th className="px-4 py-3 font-semibold">League</th>
-              <th className="px-4 py-3 font-semibold">On</th>
+              <th className="px-2 sm:px-4 py-3 font-semibold">League</th>
+              <th className="px-2 sm:px-4 py-3 font-semibold">On</th>
               {FIELDS.map((f) => (
-                <th key={f.key} className="px-4 py-3 font-semibold whitespace-nowrap">
+                <th key={f.key} className="px-2 sm:px-4 py-3 font-semibold whitespace-nowrap">
                   {f.label}
                 </th>
               ))}
-              <th className="px-4 py-3 font-semibold whitespace-nowrap">Coupons now</th>
-              <th className="px-4 py-3" />
+              <th className="px-2 sm:px-4 py-3 font-semibold whitespace-nowrap">Coupons now</th>
+              <th className="px-2 sm:px-4 py-3" />
             </tr>
           </thead>
           <tbody>
@@ -137,10 +137,10 @@ export default function AdminPage() {
               const draft = drafts[league]!;
               return (
                 <tr key={league} className="border-b border-white/5 last:border-0 align-top">
-                  <td className="px-4 py-3">
+                  <td className="px-2 sm:px-4 py-3">
                     <LeagueBadge league={league} />
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-2 sm:px-4 py-3">
                     <input
                       type="checkbox"
                       aria-label={`${league} enabled`}
@@ -150,7 +150,7 @@ export default function AdminPage() {
                     />
                   </td>
                   {FIELDS.map((f) => (
-                    <td key={f.key} className="px-4 py-3">
+                    <td key={f.key} className="px-2 sm:px-4 py-3">
                       <input
                         type="number"
                         step={f.step}
@@ -162,10 +162,10 @@ export default function AdminPage() {
                       />
                     </td>
                   ))}
-                  <td className="px-4 py-3 tabular text-brand-400 font-semibold pt-5">
+                  <td className="px-2 sm:px-4 py-3 tabular text-brand-400 font-semibold pt-5">
                     {saved[league]!.couponCount}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-2 sm:px-4 py-3">
                     <Button
                       onClick={() => save(league)}
                       loading={saving === league}

@@ -106,8 +106,8 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-6 py-10">
-      <h1 className="text-5xl text-brand-500 mb-2">Settings</h1>
+    <div className="max-w-2xl mx-auto px-4 sm:px-6 py-10">
+      <h1 className="text-4xl sm:text-5xl text-brand-500 mb-2">Settings</h1>
       <p className="text-white/50 mb-8">Signed in as {user.email}</p>
       <div className="rounded-xl border border-white/10 overflow-hidden">
         <Row href="/settings/username" title="Username" detail={user.username ?? 'Not set'} />
