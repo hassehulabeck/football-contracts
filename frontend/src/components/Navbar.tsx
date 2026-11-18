@@ -8,6 +8,7 @@ import { useAuth } from '@/lib/auth';
 const PRIMARY_LINKS = [
   { href: '/contracts', label: 'Contracts' },
   { href: '/leaderboard', label: 'Leaderboard' },
+  { href: '/mini-leagues', label: 'Mini-leagues' },
   { href: '/rules', label: 'Rules' },
 ];
 

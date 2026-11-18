@@ -133,6 +133,8 @@ model User {
   coupons            Coupon[]
   creditTransactions CreditTransaction[]
   favouriteTeams     FavouriteTeam[]
+  ownedMiniLeagues   MiniLeague[]       @relation("MiniLeagueOwner")
+  miniLeagues        MiniLeagueMember[]
 }
 
 model FavouriteTeam {
@@ -325,4 +327,36 @@ model Feedback {
   page      String?
   emailed   Boolean  @default(false)
   createdAt DateTime @default(now())
+}
+
+// A private table among friends: the same profit/month/credits standings as
+// the public leaderboard, restricted to the members. Everyone still plays the
+// same contracts — a mini-league is a view, not a separate game.
+//
+// Joined by invite code (a link, /join/<code>), so the code is the only
+// secret: the owner can replace it to stop a leaked link working.
+model MiniLeague {
+  id         String   @id @default(cuid())
+  name       String
+  inviteCode String   @unique
+  // Null once the owner deletes their account with nobody left to hand the
+  // league to; ownership otherwise passes to the longest-standing member.
+  ownerId    String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  owner   User?              @relation("MiniLeagueOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  members MiniLeagueMember[]
+}
+
+model MiniLeagueMember {
+  leagueId String
+  userId   String
+  joinedAt DateTime @default(now())
+
+  league MiniLeague @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  user   User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([leagueId, userId])
+  @@index([userId])
 }

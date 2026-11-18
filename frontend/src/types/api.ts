@@ -243,3 +243,29 @@ export interface AdminUser {
   bids: number;
   coupons: number;
 }
+
+// ─── Mini-leagues ────────────────────────────────────────────────────────────
+
+export interface MiniLeagueSummary {
+  id: string;
+  name: string;
+  memberCount: number;
+  isOwner: boolean;
+}
+
+export interface MiniLeagueDetail extends LeaderboardResponse {
+  id: string;
+  name: string;
+  memberCount: number;
+  isOwner: boolean;
+  ownerId: string | null;
+  inviteCode: string;
+}
+
+/** What /join/<code> shows before anyone signs in. */
+export interface MiniLeagueInvite {
+  id: string;
+  name: string;
+  ownerName: string | null;
+  memberCount: number;
+}
