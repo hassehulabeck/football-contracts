@@ -14,23 +14,28 @@ import { TeamLogo } from '@/components/TeamLogo';
 import { TeamSchedule } from '@/components/TeamSchedule';
 import { patternDescription } from '@/lib/patterns';
 import type { ContractDetail, AuctionDetail } from '@/types/api';
+import { useI18n } from '@/lib/i18n-client';
+import { dateLocale, formatNumber, type Locale, type Tr } from '@/lib/i18n';
 
-const STATUS_LABEL: Record<string, string> = {
-  PENDING: 'Pending',
-  ACTIVE: 'Auction open',
-  CLOSED: 'Auction closed — awaiting results',
-  FULFILLED: 'Fulfilled',
-  FAILED: 'Failed',
-};
+function statusLabel(status: string, tr: Tr): string {
+  const labels: Record<string, string> = {
+    PENDING: tr('Pending', 'Väntande'),
+    ACTIVE: tr('Auction open', 'Auktion öppen'),
+    CLOSED: tr('Auction closed — awaiting results', 'Auktionen stängd — väntar på resultat'),
+    FULFILLED: tr('Fulfilled', 'Uppfyllt'),
+    FAILED: tr('Failed', 'Misslyckat'),
+  };
+  return labels[status];
+}
 
-function formatDate(dt: string) {
-  return new Date(dt).toLocaleString('sv-SE', { dateStyle: 'medium', timeStyle: 'short' });
+function formatDate(dt: string, locale: Locale) {
+  return new Date(dt).toLocaleString(dateLocale(locale), { dateStyle: 'medium', timeStyle: 'short' });
 }
 
 // Date only, read in UTC: the season cutoff is 23:59:59 UTC, which local time
 // would push into the next day and name the wrong date.
-function formatDay(dt: string) {
-  return new Date(dt).toLocaleDateString('sv-SE', { dateStyle: 'medium', timeZone: 'UTC' });
+function formatDay(dt: string, locale: Locale) {
+  return new Date(dt).toLocaleDateString(dateLocale(locale), { dateStyle: 'medium', timeZone: 'UTC' });
 }
 
 interface MyBid {
@@ -42,6 +47,7 @@ export default function ContractDetailPage() {
   const params = useParams();
   const id = params.id as string;
   const { user } = useAuth();
+  const { locale, tr } = useI18n();
 
   const [contract, setContract] = useState<ContractDetail | null>(null);
   const [auction, setAuction] = useState<AuctionDetail | null>(null);
@@ -82,7 +88,7 @@ export default function ContractDetailPage() {
     const amount = parseInt(bidAmount, 10);
     if (!amount || amount < 1) {
       setBidStatus('error');
-      setBidMessage('Enter a valid credit amount');
+      setBidMessage(tr('Enter a valid credit amount', 'Ange ett giltigt antal krediter'));
       return;
     }
 
@@ -93,20 +99,20 @@ export default function ContractDetailPage() {
       await api.post(`/api/auctions/${contract.auction.id}/bid`, { amount });
       setMyBid({ amount, updatedAt: new Date().toISOString() });
       setBidStatus('success');
-      setBidMessage(myBid ? 'Bid updated!' : 'Bid placed!');
+      setBidMessage(myBid ? tr('Bid updated!', 'Budet är uppdaterat!') : tr('Bid placed!', 'Budet är lagt!'));
       // Refresh public auction stats
       const ar = await api.get<AuctionDetail>(`/api/auctions/${contract.auction.id}`);
       setAuction(ar.data);
     } catch (err: any) {
       setBidStatus('error');
-      setBidMessage(err.response?.data?.error ?? 'Failed to place bid');
+      setBidMessage(err.response?.data?.error ?? tr('Failed to place bid', 'Budet kunde inte läggas'));
     }
   }
 
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <p className="text-white/50">Loading…</p>
+        <p className="text-white/50">{tr('Loading…', 'Laddar…')}</p>
       </div>
     );
   }
@@ -114,9 +120,9 @@ export default function ContractDetailPage() {
   if (!contract) {
     return (
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-20 text-center">
-        <p className="text-white/50">Contract not found.</p>
+        <p className="text-white/50">{tr('Contract not found.', 'Kontraktet hittades inte.')}</p>
         <Link href="/contracts" className="text-brand-400 hover:text-brand-300 text-sm mt-4 inline-block">
-          ← Back to contracts
+          {tr('← Back to contracts', '← Tillbaka till kontrakten')}
         </Link>
       </div>
     );
@@ -130,41 +136,41 @@ export default function ContractDetailPage() {
   return (
     <div className="max-w-2xl mx-auto px-4 sm:px-6 py-10">
       <Link href="/contracts" className="text-white/30 hover:text-white/60 text-sm transition-colors mb-6 inline-block">
-        ← Contracts
+        {tr('← Contracts', '← Kontrakt')}
       </Link>
 
       <div className="mb-3 flex items-center justify-between gap-3">
         <LeagueBadge league={contract.team.league} />
-        <ShareButton text={shareText(contract)} />
+        <ShareButton text={shareText(contract, tr)} />
       </div>
       <h1 className="text-3xl sm:text-4xl font-black text-brand-500 mb-1 flex items-center gap-3">
         <TeamLogo externalId={contract.team.externalId} className="w-8 h-8 shrink-0" />
         {formatTeamName(contract.team.name)}
       </h1>
-      <p className="text-orange-200 text-xl mb-8">{patternDescription(contract.pattern)}</p>
+      <p className="text-orange-200 text-xl mb-8">{patternDescription(contract.pattern, locale)}</p>
 
       <div className="grid grid-cols-2 gap-3 mb-8">
         <PatternProgress pattern={contract.pattern} progress={contract.progress} />
-        <InfoCard label="Coupons" value={String(contract.couponCount)} />
-        <InfoCard label="Status" value={STATUS_LABEL[contract.status]} />
-        <InfoCard label="Created" value={formatDate(contract.createdAt)} />
+        <InfoCard label={tr('Coupons', 'Kuponger')} value={String(contract.couponCount)} />
+        <InfoCard label={tr('Status', 'Status')} value={statusLabel(contract.status, tr)} />
+        <InfoCard label={tr('Created', 'Skapat')} value={formatDate(contract.createdAt, locale)} />
       </div>
 
       {contract.status === 'FULFILLED' && (
         <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4 sm:p-6 mb-6">
           <h2 className="text-green-400 text-xs uppercase tracking-widest mb-1 font-bold">
-            Fulfilled
+            {tr('Fulfilled', 'Uppfyllt')}
           </h2>
           {contract.resolvedAt && (
             <p className="text-white/40 text-xs mb-4">
-              Confirmed {formatDate(contract.resolvedAt)}
+              {tr('Confirmed', 'Bekräftat')} {formatDate(contract.resolvedAt, locale)}
             </p>
           )}
 
           {contract.fulfillment ? (
             <>
               <p className="text-white/50 text-sm mb-3">
-                These three matches completed the pattern:
+                {tr('These three matches completed the pattern:', 'De här tre matcherna fullbordade mönstret:')}
               </p>
               <div className="rounded-lg border border-white/10 overflow-x-auto mb-4">
                 <table className="w-full text-sm">
@@ -181,13 +187,17 @@ export default function ContractDetailPage() {
             // were later corrected it can disappear, and saying so is better
             // than rendering an empty box.
             <p className="text-white/40 text-sm mb-4">
-              The matching run is no longer reconstructible from current results.
+              {tr(
+                'The matching run is no longer reconstructible from current results.',
+                'Sviten går inte längre att återskapa från nuvarande resultat.',
+              )}
             </p>
           )}
 
           <p className="text-white/50 text-sm">
             <span className="tabular font-bold text-green-400">{contract.couponsPaid}</span>{' '}
-            {contract.couponsPaid === 1 ? 'coupon' : 'coupons'} paid out at 100 credits each.
+            {contract.couponsPaid === 1 ? tr('coupon', 'kupong') : tr('coupons', 'kuponger')}{' '}
+            {tr('paid out at 100 credits each.', 'betalade ut 100 krediter var.')}
           </p>
         </div>
       )}
@@ -195,16 +205,16 @@ export default function ContractDetailPage() {
       {contract.status === 'FAILED' && (
         <div className="bg-white/5 border border-white/10 rounded-xl p-4 sm:p-6 mb-6">
           <h2 className="text-red-400 text-xs uppercase tracking-widest mb-1 font-bold">
-            Failed
+            {tr('Failed', 'Misslyckat')}
           </h2>
           {contract.resolvedAt && (
-            <p className="text-white/40 text-xs mb-3">Closed {formatDate(contract.resolvedAt)}</p>
+            <p className="text-white/40 text-xs mb-3">{tr('Closed', 'Stängt')} {formatDate(contract.resolvedAt, locale)}</p>
           )}
           <p className="text-white/50 text-sm">
-            {formatTeamName(contract.team.name)} never produced {contract.pattern} in three
-            consecutive matches
-            before the season ended. The {contract.couponsSold}{' '}
-            {contract.couponsSold === 1 ? 'coupon' : 'coupons'} sold here paid nothing.
+            {tr(
+              `${formatTeamName(contract.team.name)} never produced ${contract.pattern} in three consecutive matches before the season ended. The ${contract.couponsSold} ${contract.couponsSold === 1 ? 'coupon' : 'coupons'} sold here paid nothing.`,
+              `${formatTeamName(contract.team.name)} fick aldrig ihop ${contract.pattern} i tre raka matcher innan säsongen tog slut. ${contract.couponsSold === 1 ? 'Den kupong' : `De ${contract.couponsSold} kuponger`} som såldes här gav ingenting.`,
+            )}
           </p>
         </div>
       )}
@@ -212,22 +222,20 @@ export default function ContractDetailPage() {
       {contract.status === 'CLOSED' && (
         <div className="bg-white/5 border border-white/10 rounded-xl p-4 sm:p-6 mb-6">
           <h2 className="text-white/40 text-xs uppercase tracking-widest mb-2 font-bold">
-            Awaiting result
+            {tr('Awaiting result', 'Väntar på resultat')}
           </h2>
           <p className="text-white/50 text-sm">
-            The auction is over and {contract.couponsSold}{' '}
-            {contract.couponsSold === 1 ? 'coupon is' : 'coupons are'} held. This contract stays
-            open until {formatTeamName(contract.team.name)} produces {contract.pattern} in three
-            consecutive
-            matches, or until the season ends
-            {contract.seasonEndsAt ? ` on ${formatDay(contract.seasonEndsAt)}` : ''}.
+            {tr(
+              `The auction is over and ${contract.couponsSold} ${contract.couponsSold === 1 ? 'coupon is' : 'coupons are'} held. This contract stays open until ${formatTeamName(contract.team.name)} produces ${contract.pattern} in three consecutive matches, or until the season ends${contract.seasonEndsAt ? ` on ${formatDay(contract.seasonEndsAt, locale)}` : ''}.`,
+              `Auktionen är över och ${contract.couponsSold} ${contract.couponsSold === 1 ? 'kupong' : 'kuponger'} har ägare. Kontraktet är öppet tills ${formatTeamName(contract.team.name)} får ihop ${contract.pattern} i tre raka matcher, eller tills säsongen tar slut${contract.seasonEndsAt ? ` den ${formatDay(contract.seasonEndsAt, locale)}` : ''}.`,
+            )}
           </p>
         </div>
       )}
 
       {contract.auction && (
         <div className="bg-white/5 border border-white/10 rounded-xl p-4 sm:p-6 mb-6">
-          <h2 className="text-white/40 text-xs uppercase tracking-widest mb-4">Auction</h2>
+          <h2 className="text-white/40 text-xs uppercase tracking-widest mb-4">{tr('Auction', 'Auktion')}</h2>
 
           {/* Two figures while bidding is open, three once it has settled —
               the winning bid only exists to be shown after the fact. */}
@@ -238,14 +246,14 @@ export default function ContractDetailPage() {
           >
             <div>
               <p className="text-white/40 text-xs mb-1">
-                {contract.auction.closed ? 'Closed' : 'Closes'}
+                {contract.auction.closed ? tr('Closed', 'Stängde') : tr('Closes', 'Stänger')}
               </p>
-              <p className="text-orange-200 text-sm font-semibold">{formatDate(contract.auction.endsAt)}</p>
+              <p className="text-orange-200 text-sm font-semibold">{formatDate(contract.auction.endsAt, locale)}</p>
             </div>
             {auction && (
               <>
                 <div>
-                  <p className="text-white/40 text-xs mb-1">Bids placed</p>
+                  <p className="text-white/40 text-xs mb-1">{tr('Bids placed', 'Lagda bud')}</p>
                   <p className="tabular font-black text-2xl text-brand-400">{auction.bidCount}</p>
                 </div>
                 {contract.auction.closed && (
@@ -258,7 +266,7 @@ export default function ContractDetailPage() {
                     {auction.winningBids ? (
                       <>
                         <p className="text-white/40 text-xs mb-1">
-                          {auction.winningBids.count === 1 ? 'Coupon went for' : 'Coupons went for'}
+                          {auction.winningBids.count === 1 ? tr('Coupon went for', 'Kupongen gick för') : tr('Coupons went for', 'Kupongerna gick för')}
                         </p>
                         <p className="tabular font-black text-2xl text-brand-400">
                           {auction.winningBids.min === auction.winningBids.max
@@ -269,7 +277,7 @@ export default function ContractDetailPage() {
                       </>
                     ) : (
                       <>
-                        <p className="text-white/40 text-xs mb-1">Highest bid</p>
+                        <p className="text-white/40 text-xs mb-1">{tr('Highest bid', 'Högsta bud')}</p>
                         <p className="tabular font-black text-2xl text-brand-400">
                           {auction.highestBid != null ? auction.highestBid : '—'}
                           {auction.highestBid != null && (
@@ -290,11 +298,11 @@ export default function ContractDetailPage() {
                 <>
                   <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 mb-3">
                     <h3 className="text-white/40 text-xs uppercase tracking-widest">
-                      {myBid ? 'Update your bid' : 'Place your bid'}
+                      {myBid ? tr('Update your bid', 'Ändra ditt bud') : tr('Place your bid', 'Lägg ditt bud')}
                     </h3>
                     {myBid && (
                       <span className="text-xs text-white/40">
-                        Current bid:{' '}
+                        {tr('Current bid:', 'Nuvarande bud:')}{' '}
                         <span className="tabular font-bold text-brand-400">{myBid.amount} cr</span>
                       </span>
                     )}
@@ -306,7 +314,7 @@ export default function ContractDetailPage() {
                       value={bidAmount}
                       onChange={(e) => setBidAmount(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && placeBid()}
-                      placeholder="Credits"
+                      placeholder={tr('Credits', 'Krediter')}
                       className="flex-1 min-w-0 bg-white/5 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-white/20 focus:outline-hidden focus:border-brand-500 tabular"
                     />
                     <button
@@ -314,7 +322,7 @@ export default function ContractDetailPage() {
                       disabled={bidStatus === 'loading'}
                       className="bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-white font-bold px-6 py-2 rounded-lg transition-colors"
                     >
-                      {bidStatus === 'loading' ? '…' : myBid ? 'Update' : 'Bid'}
+                      {bidStatus === 'loading' ? '…' : myBid ? tr('Update', 'Ändra') : tr('Bid', 'Bjud')}
                     </button>
                   </div>
                   {bidMessage && (
@@ -323,18 +331,22 @@ export default function ContractDetailPage() {
                     </p>
                   )}
                   <p className="text-white/30 text-xs mt-2">
-                    You have{' '}
-                    <span className="tabular text-white/50">{user.credits.toLocaleString()}</span>{' '}
-                    credits. Bids are silent — you can update yours any time before close. Top{' '}
-                    <span className="text-white/50">{contract.couponCount}</span> bids win coupons.
+                    {tr('You have', 'Du har')}{' '}
+                    <span className="tabular text-white/50">{formatNumber(locale, user.credits)}</span>{' '}
+                    {tr(
+                      'credits. Bids are silent — you can update yours any time before close. Top',
+                      'krediter. Buden är dolda — du kan ändra ditt när som helst före stängning. De',
+                    )}{' '}
+                    <span className="text-white/50">{contract.couponCount}</span>{' '}
+                    {tr('bids win coupons.', 'högsta buden vinner kuponger.')}
                   </p>
                 </>
               ) : (
                 <p className="text-white/50 text-sm">
                   <Link href="/auth/login" className="text-brand-400 hover:text-brand-300 font-semibold">
-                    Log in
+                    {tr('Log in', 'Logga in')}
                   </Link>{' '}
-                  to place a bid on this contract.
+                  {tr('to place a bid on this contract.', 'för att bjuda på det här kontraktet.')}
                 </p>
               )}
             </div>
@@ -342,10 +354,13 @@ export default function ContractDetailPage() {
 
           {!auctionOpen && contract.auction.closed && (
             <p className="text-white/30 text-sm border-t border-white/10 pt-4">
-              This auction has closed.{' '}
-              <span className="tabular text-white/50">{contract.couponsSold}</span> of{' '}
-              <span className="tabular text-white/50">{contract.couponCount}</span> coupons went
-              to the highest bidders who could cover their bid at settlement.
+              {tr('This auction has closed.', 'Auktionen har stängt.')}{' '}
+              <span className="tabular text-white/50">{contract.couponsSold}</span> {tr('of', 'av')}{' '}
+              <span className="tabular text-white/50">{contract.couponCount}</span>{' '}
+              {tr(
+                'coupons went to the highest bidders who could cover their bid at settlement.',
+                'kuponger gick till de högsta budgivarna som kunde betala sitt bud vid avräkningen.',
+              )}
             </p>
           )}
         </div>
@@ -365,17 +380,24 @@ export default function ContractDetailPage() {
 }
 
 /** The message that goes with a shared link; the preview image does the rest. */
-function shareText(contract: ContractDetail): string {
+function shareText(contract: ContractDetail, tr: Tr): string {
   const team = formatTeamName(contract.team.name);
+  const p = contract.pattern;
   switch (contract.status) {
     case 'ACTIVE':
-      return `${team} ${contract.pattern} is up for auction on Football Contracts. Will they do it?`;
+      return tr(
+        `${team} ${p} is up for auction on Football Contracts. Will they do it?`,
+        `${team} ${p} är ute på auktion på Football Contracts. Klarar de det?`,
+      );
     case 'FULFILLED':
-      return `${team} did it: ${contract.pattern}, and every coupon holder got 100 credits.`;
+      return tr(
+        `${team} did it: ${p}, and every coupon holder got 100 credits.`,
+        `${team} klarade det: ${p}, och varje kupongägare fick 100 krediter.`,
+      );
     case 'FAILED':
-      return `${team} never managed ${contract.pattern} this season.`;
+      return tr(`${team} never managed ${p} this season.`, `${team} fick aldrig ihop ${p} den här säsongen.`);
     default:
-      return `${team} ${contract.pattern} on Football Contracts. Will they do it?`;
+      return tr(`${team} ${p} on Football Contracts. Will they do it?`, `${team} ${p} på Football Contracts. Klarar de det?`);
   }
 }
 

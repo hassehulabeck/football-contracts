@@ -5,6 +5,7 @@ import { api } from '@/lib/api';
 import { LEAGUE_ORDER } from '@/lib/leagues';
 import { LeagueBadge } from '@/components/LeagueBadge';
 import type { LeagueBatchConfig } from '@/types/api';
+import { useI18n } from '@/lib/i18n-client';
 
 // The rules page states the batch settings from the live config rather than
 // as copy, so an admin change can never leave the rules saying something else.
@@ -32,10 +33,11 @@ const ordered = (config: LeagueBatchConfig[]) =>
 /** Contracts per week and coupons per contract, one row per active league. */
 export function BatchSettingsTable() {
   const config = useLeagueConfig();
+  const { tr } = useI18n();
   if (config === 'error') {
-    return <p className="text-white/40 text-sm mt-4">The current numbers could not be loaded.</p>;
+    return <p className="text-white/40 text-sm mt-4">{tr('The current numbers could not be loaded.', 'De aktuella siffrorna kunde inte laddas.')}</p>;
   }
-  if (!config) return <p className="text-white/40 text-sm mt-4">Loading current settings…</p>;
+  if (!config) return <p className="text-white/40 text-sm mt-4">{tr('Loading current settings…', 'Laddar aktuella inställningar…')}</p>;
 
   const leagues = ordered(config);
   const total = leagues.reduce((sum, c) => sum + c.contractsPerWeek, 0);
@@ -45,9 +47,9 @@ export function BatchSettingsTable() {
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-white/10 text-left text-white/40 text-xs uppercase tracking-wide">
-            <th className="px-2 sm:px-4 py-2 font-semibold">League</th>
-            <th className="px-2 sm:px-4 py-2 font-semibold text-right">Contracts / week</th>
-            <th className="px-2 sm:px-4 py-2 font-semibold text-right">Coupons each</th>
+            <th className="px-2 sm:px-4 py-2 font-semibold">{tr('League', 'Liga')}</th>
+            <th className="px-2 sm:px-4 py-2 font-semibold text-right">{tr('Contracts / week', 'Kontrakt / vecka')}</th>
+            <th className="px-2 sm:px-4 py-2 font-semibold text-right">{tr('Coupons each', 'Kuponger per kontrakt')}</th>
           </tr>
         </thead>
         <tbody>
@@ -61,7 +63,7 @@ export function BatchSettingsTable() {
             </tr>
           ))}
           <tr>
-            <td className="px-2 sm:px-4 py-2.5 text-white/50">Total</td>
+            <td className="px-2 sm:px-4 py-2.5 text-white/50">{tr('Total', 'Totalt')}</td>
             <td className="px-2 sm:px-4 py-2.5 text-right tabular font-semibold text-brand-400">{total}</td>
             <td />
           </tr>
@@ -74,6 +76,7 @@ export function BatchSettingsTable() {
 /** How the coupon count scales, in words — collapsed when every league shares one rule. */
 export function CouponRuleText() {
   const config = useLeagueConfig();
+  const { tr } = useI18n();
   if (!config || config === 'error') return null;
 
   const leagues = ordered(config);
@@ -89,23 +92,32 @@ export function CouponRuleText() {
   if (!shared) {
     return (
       <p>
-        The number scales with the player base, and each league has its own setting — the
-        table under <strong className="text-orange-100">How contracts appear</strong> shows
-        what a contract gets today.
+        {tr(
+          'The number scales with the player base, and each league has its own setting — the table under',
+          'Antalet växer med antalet spelare, och varje liga har sin egen inställning — tabellen under',
+        )}{' '}
+        <strong className="text-orange-100">{tr('How contracts appear', 'Så skapas kontrakten')}</strong>{' '}
+        {tr('shows what a contract gets today.', 'visar vad ett kontrakt får i dag.')}
       </p>
     );
   }
   return (
     <p>
-      The number scales with the competition:{' '}
+      {tr('The number scales with the competition:', 'Antalet växer med konkurrensen:')}{' '}
       <strong className="text-orange-100">
-        {Math.round(first.couponRatio * 100)}% of activated players
+        {Math.round(first.couponRatio * 100)}% {tr('of activated players', 'av de aktiverade spelarna')}
       </strong>
-      , never fewer than <strong className="text-orange-100">{first.couponMin}</strong> and
-      never more than <strong className="text-orange-100">{first.couponMax}</strong>. Today
-      that is <strong className="text-orange-100">{first.couponCount} coupons per contract</strong>.
-      The count is fixed when a contract is created, so a contract keeps its supply even as
-      the player base grows.
+      , {tr('never fewer than', 'aldrig färre än')} <strong className="text-orange-100">{first.couponMin}</strong>{' '}
+      {tr('and never more than', 'och aldrig fler än')} <strong className="text-orange-100">{first.couponMax}</strong>.{' '}
+      {tr('Today that is', 'I dag blir det')}{' '}
+      <strong className="text-orange-100">
+        {first.couponCount} {tr('coupons per contract', 'kuponger per kontrakt')}
+      </strong>
+      .{' '}
+      {tr(
+        'The count is fixed when a contract is created, so a contract keeps its supply even as the player base grows.',
+        'Antalet låses när kontraktet skapas, så ett kontrakt behåller sitt utbud även när antalet spelare växer.',
+      )}
     </p>
   );
 }

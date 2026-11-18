@@ -1,4 +1,8 @@
+'use client';
+
 import Link from 'next/link';
+import { useI18n } from '@/lib/i18n-client';
+import { dateLocale, type Locale } from '@/lib/i18n';
 import { formatTeamName } from '@/lib/formatTeamName';
 import { patternLabel } from '@/lib/patterns';
 import { LeagueBadge } from './LeagueBadge';
@@ -7,9 +11,9 @@ import type { Payout } from '@/types/api';
 
 const PAYOUT = 100;
 
-function day(iso: string | null): string {
+function day(iso: string | null, locale: Locale): string {
   if (!iso) return '';
-  return new Date(iso).toLocaleDateString('en-GB', { timeZone: 'Europe/Stockholm', day: 'numeric', month: 'short' });
+  return new Date(iso).toLocaleDateString(dateLocale(locale), { timeZone: 'Europe/Stockholm', day: 'numeric', month: 'short' });
 }
 
 /**
@@ -18,6 +22,7 @@ function day(iso: string | null): string {
  * playing, and an existing player what to bid next time.
  */
 export function PayoutList({ payouts }: { payouts: Payout[] }) {
+  const { locale, tr } = useI18n();
   return (
     <ul className="flex flex-col gap-2">
       {payouts.map((p) => {
@@ -36,22 +41,22 @@ export function PayoutList({ payouts }: { payouts: Payout[] }) {
                 </div>
                 <div className="flex items-center gap-2 text-xs text-white/40 mt-0.5">
                   <LeagueBadge league={p.team.league} short />
-                  <span className="truncate" title={patternLabel(p.pattern)}>{day(p.resolvedAt)}</span>
+                  <span className="truncate" title={patternLabel(p.pattern, locale)}>{day(p.resolvedAt, locale)}</span>
                 </div>
               </div>
               <div className="text-right shrink-0">
                 {p.pricePaid ? (
                   <>
                     <div className="text-sm text-white/60 tabular">
-                      Bought for{' '}
+                      {tr('Bought for', 'Köpt för')}{' '}
                       <span className="text-orange-100 font-semibold">
                         {p.pricePaid.min === p.pricePaid.max ? p.pricePaid.min : `${p.pricePaid.min}–${p.pricePaid.max}`}
                       </span>
                     </div>
-                    <div className="text-green-400 font-black tabular">up to +{best}</div>
+                    <div className="text-green-400 font-black tabular">{tr('up to', 'upp till')} +{best}</div>
                   </>
                 ) : (
-                  <div className="text-white/30 text-sm">No coupons sold</div>
+                  <div className="text-white/30 text-sm">{tr('No coupons sold', 'Inga kuponger sålda')}</div>
                 )}
               </div>
             </Link>

@@ -19,31 +19,38 @@ import type {
   Team,
 } from '@/types/api';
 import { patternLabel } from '@/lib/patterns';
+import { useI18n } from '@/lib/i18n-client';
+import { dateLocale, type Locale, type Tr } from '@/lib/i18n';
 
 const PAGE_SIZE = 50;
 
-const STATUS_STYLE: Record<ContractStatus, { label: string; className: string }> = {
-  PENDING: { label: 'Pending', className: 'text-white/30' },
-  ACTIVE: { label: 'Auction open', className: 'text-brand-400' },
-  CLOSED: { label: 'Awaiting result', className: 'text-white/40' },
-  FULFILLED: { label: 'Fulfilled', className: 'text-green-400' },
-  FAILED: { label: 'Failed', className: 'text-red-400' },
-};
-
-function timeRemaining(endsAt: string): string {
-  const diff = new Date(endsAt).getTime() - Date.now();
-  if (diff <= 0) return 'Closing…';
-  const totalHours = Math.floor(diff / 3_600_000);
-  const mins = Math.floor((diff % 3_600_000) / 60_000);
-  if (totalHours >= 24) return `${Math.floor(totalHours / 24)}d ${totalHours % 24}h`;
-  return `${totalHours}h ${mins}m`;
+function statusStyle(status: ContractStatus, tr: Tr): { label: string; className: string } {
+  const styles: Record<ContractStatus, { label: string; className: string }> = {
+    PENDING: { label: tr('Pending', 'Väntande'), className: 'text-white/30' },
+    ACTIVE: { label: tr('Auction open', 'Auktion öppen'), className: 'text-brand-400' },
+    CLOSED: { label: tr('Awaiting result', 'Väntar på resultat'), className: 'text-white/40' },
+    FULFILLED: { label: tr('Fulfilled', 'Uppfyllt'), className: 'text-green-400' },
+    FAILED: { label: tr('Failed', 'Misslyckat'), className: 'text-red-400' },
+  };
+  return styles[status];
 }
 
-function formatDay(dt: string) {
-  return new Date(dt).toLocaleDateString('sv-SE', { month: 'short', day: 'numeric' });
+function timeRemaining(endsAt: string, tr: Tr): string {
+  const diff = new Date(endsAt).getTime() - Date.now();
+  if (diff <= 0) return tr('Closing…', 'Stänger…');
+  const totalHours = Math.floor(diff / 3_600_000);
+  const mins = Math.floor((diff % 3_600_000) / 60_000);
+  const [d, h] = [tr('d', 'd'), tr('h', 't')];
+  if (totalHours >= 24) return `${Math.floor(totalHours / 24)}${d} ${totalHours % 24}${h}`;
+  return `${totalHours}${h} ${mins}m`;
+}
+
+function formatDay(dt: string, locale: Locale) {
+  return new Date(dt).toLocaleDateString(dateLocale(locale), { month: 'short', day: 'numeric' });
 }
 
 export default function ContractsPage() {
+  const { locale, tr } = useI18n();
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -140,38 +147,41 @@ export default function ContractsPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
-      <h1 className="text-4xl sm:text-5xl text-brand-500 mb-2">Contracts</h1>
+      <h1 className="text-4xl sm:text-5xl text-brand-500 mb-2">{tr('Contracts', 'Kontrakt')}</h1>
       <p className="text-white/50 mb-8">
-        Bid on team performance contracts. New contracts every Wednesday at 03:00.{' '}
+        {tr(
+          'Bid on team performance contracts. New contracts every Wednesday at 03:00.',
+          'Bjud på kontrakt om lagens resultat. Nya kontrakt varje onsdag kl. 03:00.',
+        )}{' '}
         <Link href="/rules" className="text-brand-400 hover:text-brand-300 transition-colors">
-          Read the rules →
+          {tr('Read the rules →', 'Läs reglerna →')}
         </Link>
       </p>
 
       {summary && (
         <div className="mb-8">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            <StatTile label="Auction open" value={String(summary.open)} muted={summary.open === 0} />
+            <StatTile label={tr('Auction open', 'Auktion öppen')} value={String(summary.open)} muted={summary.open === 0} />
             <StatTile
-              label="Awaiting result"
+              label={tr('Awaiting result', 'Väntar på resultat')}
               value={String(summary.awaiting)}
               muted={summary.awaiting === 0}
             />
             <StatTile
-              label="Fulfilled"
+              label={tr('Fulfilled', 'Uppfyllda')}
               value={String(summary.fulfilled)}
               muted={summary.fulfilled === 0}
             />
-            <StatTile label="Failed" value={String(summary.failed)} muted={summary.failed === 0} />
+            <StatTile label={tr('Failed', 'Misslyckade')} value={String(summary.failed)} muted={summary.failed === 0} />
           </div>
 
           {/* Only when nothing is open. The point is to answer "so when can I
               bid again?" rather than leaving the player on an empty table. */}
           {summary.open === 0 && (
             <p className="mt-4 bg-brand-500/10 border border-brand-500/30 rounded-xl px-4 py-3 text-sm text-orange-100">
-              No auctions open right now — the next contracts are built{' '}
+              {tr('No auctions open right now — the next contracts are built', 'Inga auktioner är öppna just nu — nästa kontrakt skapas')}{' '}
               <span className="font-bold text-brand-300">
-                {formatContractRun(nextContractRun())}
+                {formatContractRun(nextContractRun(), locale)}
               </span>
               .
             </p>
@@ -190,15 +200,15 @@ export default function ContractsPage() {
       />
 
       {loading ? (
-        <p className="text-white/50 py-16 text-center">Loading contracts…</p>
+        <p className="text-white/50 py-16 text-center">{tr('Loading contracts…', 'Laddar kontrakt…')}</p>
       ) : contracts.length === 0 ? (
         <div className="text-center py-20">
-          <p className="text-white/30 mb-4">No contracts match this filter.</p>
+          <p className="text-white/30 mb-4">{tr('No contracts match this filter.', 'Inga kontrakt matchar filtret.')}</p>
           <button
             onClick={clearFilters}
             className="text-brand-400 hover:text-brand-300 text-sm font-bold uppercase tracking-wide transition-colors"
           >
-            Clear filters
+            {tr('Clear filters', 'Rensa filter')}
           </button>
         </div>
       ) : (
@@ -207,18 +217,18 @@ export default function ContractsPage() {
 
           <div className="flex flex-wrap items-center justify-between gap-3 mt-6">
             <p className="text-white/25 text-xs tabular">
-              Showing {firstShown}–{lastShown} of {total}
+              {tr('Showing', 'Visar')} {firstShown}–{lastShown} {tr('of', 'av')} {total}
             </p>
             {lastPage > 1 && (
               <div className="flex items-center gap-2">
                 <PageButton onClick={() => setPage((p) => p - 1)} disabled={page <= 1}>
-                  ← Prev
+                  {tr('← Prev', '← Föregående')}
                 </PageButton>
                 <span className="text-white/30 text-xs tabular px-1">
                   {page} / {lastPage}
                 </span>
                 <PageButton onClick={() => setPage((p) => p + 1)} disabled={page >= lastPage}>
-                  Next →
+                  {tr('Next →', 'Nästa →')}
                 </PageButton>
               </div>
             )}
@@ -250,24 +260,25 @@ function PageButton({
 }
 
 function ContractTable({ contracts }: { contracts: Contract[] }) {
+  const { locale, tr } = useI18n();
   return (
     <div className="overflow-x-auto rounded-xl border border-white/10">
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-white/10 text-white/40 text-left">
-            <th className="px-2 sm:px-4 py-3 font-medium">Team</th>
-            <th className="px-2 sm:px-4 py-3 font-medium hidden sm:table-cell">League</th>
-            <th className="px-2 sm:px-4 py-3 font-medium">Pattern</th>
-            <th className="px-2 sm:px-4 py-3 font-medium hidden sm:table-cell">Status</th>
-            <th className="px-2 sm:px-4 py-3 font-medium tabular hidden lg:table-cell">Coupons</th>
-            <th className="px-2 sm:px-4 py-3 font-medium tabular hidden lg:table-cell">Bids</th>
-            <th className="px-2 sm:px-4 py-3 font-medium">When</th>
+            <th className="px-2 sm:px-4 py-3 font-medium">{tr('Team', 'Lag')}</th>
+            <th className="px-2 sm:px-4 py-3 font-medium hidden sm:table-cell">{tr('League', 'Liga')}</th>
+            <th className="px-2 sm:px-4 py-3 font-medium">{tr('Pattern', 'Mönster')}</th>
+            <th className="px-2 sm:px-4 py-3 font-medium hidden sm:table-cell">{tr('Status', 'Status')}</th>
+            <th className="px-2 sm:px-4 py-3 font-medium tabular hidden lg:table-cell">{tr('Coupons', 'Kuponger')}</th>
+            <th className="px-2 sm:px-4 py-3 font-medium tabular hidden lg:table-cell">{tr('Bids', 'Bud')}</th>
+            <th className="px-2 sm:px-4 py-3 font-medium">{tr('When', 'När')}</th>
             <th className="px-2 sm:px-4 py-3 hidden sm:table-cell" />
           </tr>
         </thead>
         <tbody>
           {contracts.map((c) => {
-            const statusStyle = STATUS_STYLE[c.status];
+            const style = statusStyle(c.status, tr);
             return (
               <tr
                 key={c.id}
@@ -294,11 +305,11 @@ function ContractTable({ contracts }: { contracts: Contract[] }) {
                 <td className="px-2 sm:px-4 py-3">
                   <span className="font-mono font-bold text-brand-400">{c.pattern}</span>
                   <span className="text-white/30 ml-2 hidden lg:inline text-xs">
-                    {patternLabel(c.pattern)}
+                    {patternLabel(c.pattern, locale)}
                   </span>
                 </td>
-                <td className={`px-2 sm:px-4 py-3 font-semibold hidden sm:table-cell ${statusStyle.className}`}>
-                  {statusStyle.label}
+                <td className={`px-2 sm:px-4 py-3 font-semibold hidden sm:table-cell ${style.className}`}>
+                  {style.label}
                 </td>
                 <td className="px-2 sm:px-4 py-3 tabular text-white/60 hidden lg:table-cell">
                   {c.couponCount}
@@ -310,12 +321,12 @@ function ContractTable({ contracts }: { contracts: Contract[] }) {
                 <td className="px-2 sm:px-4 py-3 tabular text-white/40 whitespace-nowrap">
                   {c.status === 'ACTIVE' && c.auction && !c.auction.closed ? (
                     <span className="text-brand-400 font-semibold">
-                      {timeRemaining(c.auction.endsAt)}
+                      {timeRemaining(c.auction.endsAt, tr)}
                     </span>
                   ) : c.resolvedAt ? (
-                    formatDay(c.resolvedAt)
+                    formatDay(c.resolvedAt, locale)
                   ) : (
-                    formatDay(c.createdAt)
+                    formatDay(c.createdAt, locale)
                   )}
                 </td>
                 <td className="px-2 sm:px-4 py-3 text-right whitespace-nowrap hidden sm:table-cell">
@@ -323,7 +334,7 @@ function ContractTable({ contracts }: { contracts: Contract[] }) {
                     href={`/contracts/${c.id}`}
                     className="text-brand-400 hover:text-brand-300 font-bold text-xs uppercase tracking-wide transition-colors"
                   >
-                    View →
+                    {tr('View →', 'Visa →')}
                   </Link>
                 </td>
               </tr>

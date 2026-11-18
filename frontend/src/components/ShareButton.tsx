@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useI18n } from '@/lib/i18n-client';
 
 interface ShareButtonProps {
   /** Shared as the message text where the platform takes one. */
@@ -16,7 +17,8 @@ interface ShareButtonProps {
  * and the rest, all at once), and copies the link everywhere else. The link
  * carries its own preview image, so the text only needs to say why.
  */
-export function ShareButton({ text, url, label = 'Share', className = '' }: ShareButtonProps) {
+export function ShareButton({ text, url, label, className = '' }: ShareButtonProps) {
+  const { tr } = useI18n();
   const [copied, setCopied] = useState(false);
 
   const share = async () => {
@@ -35,7 +37,7 @@ export function ShareButton({ text, url, label = 'Share', className = '' }: Shar
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      window.prompt('Copy this link:', href);
+      window.prompt(tr('Copy this link:', 'Kopiera länken:'), href);
     }
   };
 
@@ -50,7 +52,7 @@ export function ShareButton({ text, url, label = 'Share', className = '' }: Shar
         <path d="M16 6l-4-4-4 4" />
         <path d="M12 2v14" />
       </svg>
-      {copied ? 'Link copied' : label}
+      {copied ? tr('Link copied', 'Länken kopierad') : (label ?? tr('Share', 'Dela'))}
     </button>
   );
 }

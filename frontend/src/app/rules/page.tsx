@@ -4,17 +4,84 @@ import { LEAGUES, LEAGUE_ORDER } from '@/lib/leagues';
 import { LeagueBadge } from '@/components/LeagueBadge';
 import { patternDescription, patternLabel } from '@/lib/patterns';
 import { BatchSettingsTable, CouponRuleText } from '@/components/BatchSettings';
+import { getI18n } from '@/lib/i18n-server';
+import type { Locale } from '@/lib/i18n';
 
-export const metadata: Metadata = {
-  title: 'Rules',
-  description:
-    'How Football Contracts works: contracts, silent auctions, coupons, fulfilment and payouts.',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { tr } = await getI18n();
+  return {
+    title: tr('Rules', 'Regler'),
+    description: tr(
+      'How Football Contracts works: contracts, silent auctions, coupons, fulfilment and payouts.',
+      'Så funkar Football Contracts: kontrakt, tysta auktioner, kuponger, uppfyllelse och utbetalningar.',
+    ),
+  };
+}
 
 // The four weighted-up patterns first, then a sample of the rarer 23.
 const EXAMPLE_PATTERNS = ['WWW', 'LLL', 'WDL', 'LDW', 'DDD', 'DLD'];
 
-export default function RulesPage() {
+export default async function RulesPage() {
+  const { locale } = await getI18n();
+  return locale === 'sv' ? <RulesSv /> : <RulesEn />;
+}
+
+/** The league cards and the pattern table, shared by both languages. */
+function LeagueGrid() {
+  return (
+    <div className="grid grid-cols-2 gap-3 mt-4">
+      {LEAGUE_ORDER.map((key) => (
+        <div
+          key={key}
+          className={`bg-white/5 border border-white/10 rounded-xl px-4 py-3 border-l-2 ${LEAGUES[key].stripe}`}
+        >
+          <LeagueBadge league={key} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function PatternTable({ locale }: { locale: Locale }) {
+  return (
+    <div className="rounded-xl border border-white/10 overflow-x-auto mt-4">
+      <table className="w-full text-sm">
+        <tbody>
+          {EXAMPLE_PATTERNS.map((code) => (
+            <tr key={code} className="border-b border-white/5 last:border-0">
+              <td className="px-2 sm:px-4 py-3 font-mono font-black text-brand-400 w-20">{code}</td>
+              <td className="px-2 sm:px-4 py-3 text-orange-100">{patternLabel(code, locale)}</td>
+              <td className="px-2 sm:px-4 py-3 text-white/40 text-xs hidden sm:table-cell">
+                {patternDescription(code, locale)}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function Actions({ browse, register }: { browse: string; register: string }) {
+  return (
+    <div className="border-t border-white/10 pt-8 mt-12 flex flex-wrap gap-4">
+      <Link
+        href="/contracts"
+        className="bg-brand-500 hover:bg-brand-600 text-white font-bold px-6 py-2.5 rounded-lg transition-colors"
+      >
+        {browse}
+      </Link>
+      <Link
+        href="/auth/register"
+        className="border border-brand-500 text-brand-400 hover:bg-brand-500/10 font-bold px-6 py-2.5 rounded-lg transition-colors"
+      >
+        {register}
+      </Link>
+    </div>
+  );
+}
+
+function RulesEn() {
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-10">
       <h1 className="text-4xl sm:text-5xl text-brand-500 mb-2">Rules</h1>
@@ -57,16 +124,7 @@ export default function RulesPage() {
           colour throughout the site — you will see it as a stripe down the left edge of every
           table row.
         </p>
-        <div className="grid grid-cols-2 gap-3 mt-4">
-          {LEAGUE_ORDER.map((key) => (
-            <div
-              key={key}
-              className={`bg-white/5 border border-white/10 rounded-xl px-4 py-3 border-l-2 ${LEAGUES[key].stripe}`}
-            >
-              <LeagueBadge league={key} />
-            </div>
-          ))}
-        </div>
+        <LeagueGrid />
       </Section>
 
       <Section n="4" title="How contracts appear">
@@ -90,21 +148,7 @@ export default function RulesPage() {
           equally likely: WWW and LLL come up most often, WDL and LDW nearly as often, and
           every other pattern is rarer. A few of them:
         </p>
-        <div className="rounded-xl border border-white/10 overflow-x-auto mt-4">
-          <table className="w-full text-sm">
-            <tbody>
-              {EXAMPLE_PATTERNS.map((code) => (
-                <tr key={code} className="border-b border-white/5 last:border-0">
-                  <td className="px-2 sm:px-4 py-3 font-mono font-black text-brand-400 w-20">{code}</td>
-                  <td className="px-2 sm:px-4 py-3 text-orange-100">{patternLabel(code)}</td>
-                  <td className="px-2 sm:px-4 py-3 text-white/40 text-xs hidden sm:table-cell">
-                    {patternDescription(code)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <PatternTable locale="en" />
         <p className="mt-4">
           Order matters. WDL and LDW are different contracts, and neither is satisfied by a
           draw-win-loss sequence.
@@ -250,20 +294,226 @@ export default function RulesPage() {
         </p>
       </Section>
 
-      <div className="border-t border-white/10 pt-8 mt-12 flex flex-wrap gap-4">
-        <Link
-          href="/contracts"
-          className="bg-brand-500 hover:bg-brand-600 text-white font-bold px-6 py-2.5 rounded-lg transition-colors"
-        >
-          Browse contracts
-        </Link>
-        <Link
-          href="/auth/register"
-          className="border border-brand-500 text-brand-400 hover:bg-brand-500/10 font-bold px-6 py-2.5 rounded-lg transition-colors"
-        >
-          Create an account
-        </Link>
-      </div>
+      <Actions browse="Browse contracts" register="Create an account" />
+    </div>
+  );
+}
+
+function RulesSv() {
+  return (
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-10">
+      <h1 className="text-4xl sm:text-5xl text-brand-500 mb-2">Regler</h1>
+      <p className="text-white/50 mb-12">
+        Allt om hur spelet fungerar — även det du inte ser utifrån.
+      </p>
+
+      <Section n="1" title="Idén">
+        <p>
+          Ett <strong className="text-orange-100">kontrakt</strong> är en förutsägelse om ett
+          fotbollslag — till exempel att Elfsborg vinner tre matcher i rad. Du bjuder inte på
+          själva kontraktet. Du bjuder på en <strong className="text-orange-100">kupong</strong>,
+          en av ett begränsat antal som hör till kontraktet.
+        </p>
+        <p>
+          Om laget levererar betalar varje kupong sin ägare{' '}
+          <strong className="text-brand-400">100 krediter</strong>. Din vinst är alltså{' '}
+          <span className="tabular text-orange-100">100 − ditt bud</span>. Hela spelet handlar om
+          den spänningen: bjud lågt nog för att tjäna på det, men högt nog för att faktiskt
+          vinna en kupong.
+        </p>
+      </Section>
+
+      <Section n="2" title="Ditt konto">
+        <p>
+          Registrera dig med en e-postadress och aktivera kontot via länken vi skickar. Du
+          börjar med <strong className="text-brand-400 tabular">1 000 krediter</strong>.
+        </p>
+        <p>
+          Spelet är gratis. Det går inte att köpa krediter — det enda sättet att få fler är att
+          vinna dem.
+        </p>
+      </Section>
+
+      <Section n="3" title="De fem ligorna">
+        <p>
+          Kontrakten hämtas från fem ligor i Sverige och England. Varje liga har sin egen färg
+          på hela sajten — du ser den som en rand längs vänsterkanten på varje tabellrad.
+        </p>
+        <LeagueGrid />
+      </Section>
+
+      <Section n="4" title="Så skapas kontrakten">
+        <p>
+          Varje <strong className="text-orange-100">onsdag kl. 03:00 svensk tid</strong> skapar
+          systemet en ny omgång kontrakt — ett bestämt antal per liga, vart och ett för ett
+          annat lag. Så här ser siffrorna ut just nu:
+        </p>
+        <BatchSettingsTable />
+        <p className="mt-4">
+          Ett lag får bara kontrakt så länge det fortfarande kan klara ett: det behöver minst{' '}
+          <strong className="text-orange-100">tre matcher kvar</strong> av säsongen, och nästa
+          inom tre veckor. Därför slutar en liga få kontrakt under sina sista veckor och börjar
+          igen strax innan den nya säsongen drar igång. Championship fortsätter genom den
+          svenska vintern.
+        </p>
+        <p className="mt-4">
+          Varje kontrakt får ett slumpat mönster av tre resultat — vilken blandning av
+          vinster, oavgjorda och förluster som helst, så det finns{' '}
+          <strong className="text-orange-100">27 möjliga mönster</strong>. De är inte lika
+          vanliga: WWW och LLL dyker upp oftast, WDL och LDW nästan lika ofta, och alla andra
+          mönster är ovanligare. Några av dem:
+        </p>
+        <PatternTable locale="sv" />
+        <p className="mt-4">
+          Ordningen spelar roll. WDL och LDW är olika kontrakt, och inget av dem uppfylls av
+          sekvensen oavgjort–vinst–förlust.
+        </p>
+        <p>
+          Bokstäverna är engelska: <span className="font-mono text-brand-400">W</span> = vinst
+          (win), <span className="font-mono text-brand-400">D</span> = oavgjort (draw),{' '}
+          <span className="font-mono text-brand-400">L</span> = förlust (loss).
+        </p>
+      </Section>
+
+      <Section n="5" title="Kuponger">
+        <p>
+          Varje kontrakt har ett bestämt antal kuponger — det är utbudet som alla bjuder om.
+        </p>
+        <CouponRuleText />
+      </Section>
+
+      <Section n="6" title="Auktionen">
+        <p>
+          Varje kontrakt öppnar en <strong className="text-orange-100">auktion på 48 timmar</strong>{' '}
+          i samma stund som det skapas. Budgivningen är{' '}
+          <strong className="text-orange-100">dold</strong> — ingen ser vad någon annan har bjudit.
+        </p>
+        <p>
+          Medan auktionen är öppen är det enda du får veta om marknaden{' '}
+          <strong className="text-orange-100">hur många bud som har lagts</strong> — aldrig
+          beloppen. Antalet står på kontraktssidan och i kolumnen{' '}
+          <strong className="text-orange-100">Bud</strong> i kontraktslistan, så att du kan väga
+          det mot antalet kuponger innan du bestämmer dig.
+        </p>
+        <p>
+          När auktionen har stängt visar kontraktssidan också{' '}
+          <strong className="text-orange-100">vad kupongerna gick för</strong>: det lägsta och
+          det högsta vinnande budet — fortfarande utan budgivarnas namn. Det lägsta är priset du
+          behövde slå, och det är siffran som är värd att minnas nästa gång samma lag dyker upp.
+        </p>
+        <p>
+          Du får ändra ditt bud hur många gånger du vill tills auktionen stänger. Bara ditt
+          senaste belopp räknas.
+        </p>
+      </Section>
+
+      <Section n="7" title="Så avgörs en auktion">
+        <p>
+          Det här är delen som är värd att läsa två gånger, för det är här spelare förlorar
+          kuponger de trodde att de hade vunnit.
+        </p>
+        <p>
+          När auktionen stänger sorteras alla bud med{' '}
+          <strong className="text-orange-100">det högsta först</strong>. Lika bud skiljs åt av{' '}
+          <strong className="text-orange-100">vem som bjöd först</strong> — om du och någon
+          annan båda bjuder 40 rankas det tidigare budet över det senare. Kupongerna delas ut
+          nedåt i listan tills de tar slut.
+        </p>
+
+        <div className="bg-brand-500/10 border border-brand-500/30 rounded-xl p-5 my-5">
+          <p className="text-brand-300 font-bold text-sm uppercase tracking-widest mb-2">
+            Krediterna dras när auktionen stänger, inte när du bjuder
+          </p>
+          <p className="text-white/60 text-sm leading-relaxed m-0">
+            Ett bud reserverar ingenting. Ditt saldo kontrolleras och belastas först när
+            auktionen avgörs. Det betyder att dina 1 000 krediter kan ligga bakom ett bud på
+            1 000 krediter i tio olika auktioner samtidigt — och när de avgörs kan du bara
+            betala för ett.
+          </p>
+          <p className="text-white/60 text-sm leading-relaxed mt-3 mb-0">
+            Om du inte kan betala ditt bud i det ögonblick det avgörs{' '}
+            <strong className="text-orange-100">hoppas det över</strong> och kupongen går vidare
+            till nästa budgivare i listan. Du hamnar aldrig på minus — men du förlorar kupongen,
+            och inget varnar dig i förväg. Håll koll på hur mycket du har bundit upp i alla dina
+            öppna auktioner.
+          </p>
+        </div>
+
+        <p>
+          Efteråt kan du alltid se hur det gick. Ett bud som vann blir en kupong under{' '}
+          <strong className="text-orange-100">Dina kuponger</strong> på din översikt; ett som
+          inte vann listas under <strong className="text-orange-100">Förlorade kontrakt</strong>,
+          med beloppet du bjöd. Att förlora kostar ingenting — krediter dras bara för bud som
+          vinner.
+        </p>
+        <p>
+          Auktionerna gås igenom var 15:e minut, så ett kontrakt stänger vid första
+          genomgången efter sluttiden snarare än på sekunden.
+        </p>
+      </Section>
+
+      <Section n="8" title="Så uppfylls ett kontrakt">
+        <p>
+          Ett kontrakt är uppfyllt när laget får ihop mönstret under{' '}
+          <strong className="text-orange-100">tre raka matcher</strong>, där bara matcher spelade{' '}
+          <strong className="text-orange-100">efter att kontraktet skapades</strong> räknas.
+        </p>
+        <p>
+          Det behöver inte vara de tre närmaste. Systemet för ett fönster på tre matcher över
+          alla resultat under resten av säsongen, så ett kontrakt som skapas i maj kan uppfyllas
+          i september.
+        </p>
+        <p>
+          Raka betyder{' '}
+          <strong className="text-orange-100">i den ordning matcherna faktiskt spelades</strong>,
+          inte efter omgång. Matcher flyttas hela tiden: en uppskjuten match från omgång 19 kan
+          spelas medan ligan är inne på omgång 7. Vi sorterar efter det verkliga speldatumet, så
+          den flyttade matchen hamnar där den faktiskt spelades.
+        </p>
+        <p>
+          Resultaten hämtas var tredje timme, så ett uppfyllt kontrakt betalar normalt ut inom
+          några timmar efter slutsignalen.
+        </p>
+      </Section>
+
+      <Section n="9" title="När kontrakten tar slut">
+        <p>
+          Ett kontrakt har ingen egen deadline. Det är öppet tills mönstret dyker upp — eller
+          tills ligans säsong är slut, och då markeras varje kontrakt som aldrig gick in som
+          misslyckat. För de svenska ligorna är det{' '}
+          <strong className="text-orange-100">30 november</strong>. Championship spelas från
+          augusti till maj, så dess kontrakt gäller till{' '}
+          <strong className="text-orange-100">31 maj</strong> året efter, slutspel inräknat.
+        </p>
+        <p>
+          Ett misslyckat kontrakt betalar ingenting. Krediterna du lade på kupongen är borta. En
+          kupong är ett vad, inte en tillgång du får tillbaka — och den kan inte säljas vidare
+          eller överlåtas.
+        </p>
+      </Section>
+
+      <Section n="10" title="Utbetalning och topplistan">
+        <p>
+          När ett kontrakt uppfylls får <strong className="text-brand-400">varje</strong>{' '}
+          kupongägare 100 krediter. Kupongägarna tävlar inte mot varandra då — ni vinner
+          tillsammans. Tävlingen skedde i auktionen.
+        </p>
+        <p>
+          <Link href="/leaderboard" className="text-brand-400 hover:text-brand-300 transition-colors">Topplistan</Link>{' '}
+          rankar aktiverade spelare efter <strong className="text-brand-400">vinst</strong>: vad
+          dina kuponger betalade ut minus vad de kostade. De 1 000 krediter du börjar med räknas
+          inte, så en spelare som aldrig bjuder ligger på noll. En kupong kostar i samma stund
+          som auktionen avgörs och betalar först när kontraktet uppfylls, så räkna med att glida
+          nedåt i tabellen medan dina kuponger väntar. Det finns också en månadstabell, och en
+          efter rent saldo.
+        </p>
+        <p>
+          Om dina krediter tar slut kan du inte bjuda förrän någon av dina kuponger betalar ut.
+          Det finns ingen påfyllning — välj dina bud med det i åtanke.
+        </p>
+      </Section>
+
+      <Actions browse="Se kontrakten" register="Skapa ett konto" />
     </div>
   );
 }

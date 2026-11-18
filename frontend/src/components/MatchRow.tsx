@@ -1,4 +1,8 @@
+'use client';
+
 import { formatTeamName } from '@/lib/formatTeamName';
+import { useI18n } from '@/lib/i18n-client';
+import { dateLocale } from '@/lib/i18n';
 import { TeamLogo } from '@/components/TeamLogo';
 import type { FulfillmentMatch } from '@/types/api';
 
@@ -15,6 +19,7 @@ export const RESULT_STYLE: Record<string, string> = {
  * list, so a result reads the same in both places.
  */
 export function MatchRow({ match }: { match: FulfillmentMatch }) {
+  const { locale, tr } = useI18n();
   // homeScore/awayScore are always stored home-first, so flip them for an away
   // match to read as "us — them".
   const [own, other] = match.isHome
@@ -33,7 +38,7 @@ export function MatchRow({ match }: { match: FulfillmentMatch }) {
         </span>
       </td>
       <td className="px-2 sm:px-3 py-2.5 tabular text-white/40 text-xs whitespace-nowrap">
-        {new Date(match.playedAt).toLocaleDateString('sv-SE', {
+        {new Date(match.playedAt).toLocaleDateString(dateLocale(locale), {
           month: 'short',
           day: 'numeric',
         })}
@@ -44,12 +49,12 @@ export function MatchRow({ match }: { match: FulfillmentMatch }) {
       <td className="px-2 sm:px-3 py-2.5 text-white/50">
         {match.opponent ? (
           <span className="inline-flex items-center gap-1.5">
-            <span className="text-white/30 hidden sm:inline">vs</span>
+            <span className="text-white/30 hidden sm:inline">{tr('vs', 'mot')}</span>
             <TeamLogo externalId={match.opponentTeamId} className="w-3.5 h-3.5" />
             {formatTeamName(match.opponent)}
           </span>
         ) : (
-          <span className="text-white/25">Opponent unknown</span>
+          <span className="text-white/25">{tr('Opponent unknown', 'Okänd motståndare')}</span>
         )}
       </td>
       <td className="px-2 sm:px-3 py-2.5 text-white/30 text-xs text-right">
@@ -61,10 +66,11 @@ export function MatchRow({ match }: { match: FulfillmentMatch }) {
 
 /** "Home"/"Away", shortened to H/A on a phone so the row fits without scrolling. */
 export function HomeAway({ isHome }: { isHome: boolean }) {
+  const { tr } = useI18n();
   return (
     <>
-      <span className="sm:hidden">{isHome ? 'H' : 'A'}</span>
-      <span className="hidden sm:inline">{isHome ? 'Home' : 'Away'}</span>
+      <span className="sm:hidden">{isHome ? tr('H', 'H') : tr('A', 'B')}</span>
+      <span className="hidden sm:inline">{isHome ? tr('Home', 'Hemma') : tr('Away', 'Borta')}</span>
     </>
   );
 }

@@ -3,16 +3,20 @@
 import { LEAGUES, LEAGUE_LOGO, LEAGUE_ORDER, leagueStyle } from '@/lib/leagues';
 import { formatTeamName } from '@/lib/formatTeamName';
 import type { League, StatusFilter, Team } from '@/types/api';
+import { useI18n } from '@/lib/i18n-client';
+import type { Tr } from '@/lib/i18n';
 
 export type LeagueFilter = League | 'ALL';
 
-const STATUS_OPTIONS: { value: StatusFilter; label: string }[] = [
-  { value: 'open', label: 'Auction open' },
-  { value: 'awaiting', label: 'Awaiting result' },
-  { value: 'fulfilled', label: 'Fulfilled' },
-  { value: 'failed', label: 'Failed' },
-  { value: 'all', label: 'All contracts' },
-];
+function statusOptions(tr: Tr): { value: StatusFilter; label: string }[] {
+  return [
+    { value: 'open', label: tr('Auction open', 'Auktion öppen') },
+    { value: 'awaiting', label: tr('Awaiting result', 'Väntar på resultat') },
+    { value: 'fulfilled', label: tr('Fulfilled', 'Uppfyllda') },
+    { value: 'failed', label: tr('Failed', 'Misslyckade') },
+    { value: 'all', label: tr('All contracts', 'Alla kontrakt') },
+  ];
+}
 
 interface ContractFiltersProps {
   status: StatusFilter;
@@ -41,6 +45,7 @@ export function ContractFilters({
   onTeamChange,
   teams,
 }: ContractFiltersProps) {
+  const { tr } = useI18n();
   return (
     <div className="flex flex-col gap-4 mb-8">
       <div className="flex flex-wrap gap-2">
@@ -52,7 +57,7 @@ export function ContractFilters({
               : 'border-white/10 text-white/40 hover:text-white/70 hover:border-white/25'
           }`}
         >
-          All leagues
+          {tr('All leagues', 'Alla ligor')}
         </button>
 
         {LEAGUE_ORDER.map((key) => {
@@ -91,13 +96,13 @@ export function ContractFilters({
 
       <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
         <label className="flex w-full sm:w-auto items-center gap-2 text-xs text-white/40">
-          <span className="uppercase tracking-widest w-14 sm:w-auto">Status</span>
+          <span className="uppercase tracking-widest w-14 sm:w-auto">{tr('Status', 'Status')}</span>
           <select
             value={status}
             onChange={(e) => onStatusChange(e.target.value as StatusFilter)}
             className="flex-1 sm:flex-none min-w-0 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-base sm:text-sm text-orange-100 focus:outline-hidden focus:border-brand-500"
           >
-            {STATUS_OPTIONS.map((o) => (
+            {statusOptions(tr).map((o) => (
               <option key={o.value} value={o.value}>
                 {o.label}
               </option>
@@ -106,13 +111,13 @@ export function ContractFilters({
         </label>
 
         <label className="flex w-full sm:w-auto items-center gap-2 text-xs text-white/40">
-          <span className="uppercase tracking-widest w-14 sm:w-auto">Team</span>
+          <span className="uppercase tracking-widest w-14 sm:w-auto">{tr('Team', 'Lag')}</span>
           <select
             value={teamId}
             onChange={(e) => onTeamChange(e.target.value)}
             className="flex-1 sm:flex-none min-w-0 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-base sm:text-sm text-orange-100 focus:outline-hidden focus:border-brand-500 sm:max-w-56"
           >
-            <option value="ALL">All teams</option>
+            <option value="ALL">{tr('All teams', 'Alla lag')}</option>
             {/* Grouped by league, not a flat list. Dropping the " W" suffix
                 leaves a women's club sharing its men's club's name — Sandviken
                 is in both Superettan and Elitettan — and an <option> cannot

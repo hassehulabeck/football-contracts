@@ -4,16 +4,20 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
+import { useI18n } from '@/lib/i18n-client';
+import { formatNumber } from '@/lib/i18n';
 
-const PRIMARY_LINKS = [
-  { href: '/contracts', label: 'Contracts' },
-  { href: '/leaderboard', label: 'Leaderboard' },
-  { href: '/mini-leagues', label: 'Mini-leagues' },
-  { href: '/rules', label: 'Rules' },
-];
 
 export function Navbar() {
   const { user, loading, logout } = useAuth();
+  const { locale, tr } = useI18n();
+
+  const PRIMARY_LINKS = [
+    { href: '/contracts', label: tr('Contracts', 'Kontrakt') },
+    { href: '/leaderboard', label: tr('Leaderboard', 'Topplista') },
+    { href: '/mini-leagues', label: tr('Mini-leagues', 'Miniligor') },
+    { href: '/rules', label: tr('Rules', 'Regler') },
+  ];
   const router = useRouter();
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -30,16 +34,16 @@ export function Navbar() {
 
   const accountLinks = user
     ? [
-        { href: '/dashboard', label: 'Dashboard' },
-        { href: '/settings', label: 'Settings' },
+        { href: '/dashboard', label: tr('Dashboard', 'Översikt') },
+        { href: '/settings', label: tr('Settings', 'Inställningar') },
         ...(user.isAdmin ? [{ href: '/admin', label: 'Admin' }] : []),
       ]
     : [];
 
   const credits = user && (
     <span className="text-orange-200 text-sm whitespace-nowrap">
-      <span className="text-white/50 mr-1">Credits</span>
-      <span className="tabular font-semibold text-brand-400">{user.credits.toLocaleString()}</span>
+      <span className="text-white/50 mr-1">{tr('Credits', 'Krediter')}</span>
+      <span className="tabular font-semibold text-brand-400">{formatNumber(locale, user.credits)}</span>
     </span>
   );
 
@@ -83,19 +87,19 @@ export function Navbar() {
                   onClick={handleLogout}
                   className="text-sm text-white/50 hover:text-white transition-colors"
                 >
-                  Log out
+                  {tr('Log out', 'Logga ut')}
                 </button>
               </>
             ) : (
               <>
                 <Link href="/auth/login" className="text-sm text-orange-200 hover:text-white transition-colors">
-                  Log in
+                  {tr('Log in', 'Logga in')}
                 </Link>
                 <Link
                   href="/auth/register"
                   className="text-sm bg-brand-500 hover:bg-brand-600 text-white font-bold px-4 py-1.5 rounded-lg transition-colors"
                 >
-                  Register
+                  {tr('Register', 'Skapa konto')}
                 </Link>
               </>
             )}
@@ -110,7 +114,7 @@ export function Navbar() {
             onClick={() => setMenuOpen((o) => !o)}
             aria-expanded={menuOpen}
             aria-controls="mobile-menu"
-            aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+            aria-label={menuOpen ? tr('Close menu', 'Stäng menyn') : tr('Open menu', 'Öppna menyn')}
             className="-mr-2 p-2 text-orange-200 hover:text-white transition-colors"
           >
             <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
@@ -145,7 +149,7 @@ export function Navbar() {
                   onClick={handleLogout}
                   className="text-white/50 hover:text-white transition-colors py-1"
                 >
-                  Log out
+                  {tr('Log out', 'Logga ut')}
                 </button>
               ) : (
                 <div className="grid grid-cols-2 gap-3">
@@ -153,13 +157,13 @@ export function Navbar() {
                     href="/auth/login"
                     className="text-center border border-white/20 text-orange-200 hover:text-white font-semibold py-2.5 rounded-lg transition-colors"
                   >
-                    Log in
+                    {tr('Log in', 'Logga in')}
                   </Link>
                   <Link
                     href="/auth/register"
                     className="text-center bg-brand-500 hover:bg-brand-600 text-white font-bold py-2.5 rounded-lg transition-colors"
                   >
-                    Register
+                    {tr('Register', 'Skapa konto')}
                   </Link>
                 </div>
               )}

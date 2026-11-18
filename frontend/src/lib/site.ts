@@ -9,8 +9,11 @@ export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.footba
 
 export const SITE_NAME = 'Football Contracts';
 
-export const SITE_DESCRIPTION =
-  'A free football prediction game. Bid on coupons that pay out when a team hits three results in a row — Allsvenskan, Superettan, Damallsvenskan, Elitettan and the Championship.';
+export function siteDescription(locale: 'en' | 'sv'): string {
+  return locale === 'sv'
+    ? 'Ett gratis tippningsspel för fotboll. Bjud på kuponger som betalar ut när ett lag får tre resultat i rad — Allsvenskan, Superettan, Damallsvenskan, Elitettan och Championship.'
+    : 'A free football prediction game. Bid on coupons that pay out when a team hits three results in a row — Allsvenskan, Superettan, Damallsvenskan, Elitettan and the Championship.';
+}
 
 /** Where server-side code (metadata, preview images) reads the API from. */
 export const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000').replace(/\/$/, '');

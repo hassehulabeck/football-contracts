@@ -7,6 +7,7 @@
  */
 import { ImageResponse } from 'next/og';
 import { SITE_NAME } from './site';
+import { makeTr, type Locale } from './i18n';
 
 export const OG_SIZE = { width: 1200, height: 630 };
 
@@ -80,7 +81,8 @@ export async function crestDataUrl(externalId: number | null | undefined): Promi
 }
 
 /** The site's own card: the preview for every page without one of its own. */
-export function renderSiteCard() {
+export function renderSiteCard(locale: Locale = 'en') {
+  const tr = makeTr(locale);
   return new ImageResponse(
     (
       <div
@@ -108,16 +110,19 @@ export function renderSiteCard() {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 560 }}>
             <span style={{ fontSize: 56, fontWeight: 700, color: OG.cream, lineHeight: 1.1 }}>
-              Bid on how your team plays
+              {tr('Bid on how your team plays', 'Bjud på hur ditt lag spelar')}
             </span>
             <span style={{ fontSize: 28, color: OG.muted, lineHeight: 1.35 }}>
-              Win a coupon in a silent auction. It pays 100 credits if the team hits the pattern.
+              {tr(
+                'Win a coupon in a silent auction. It pays 100 credits if the team hits the pattern.',
+                'Vinn en kupong i en tyst auktion. Den ger 100 krediter om laget når mönstret.',
+              )}
             </span>
           </div>
         </div>
 
         <span style={{ fontSize: 26, color: OG.muted }}>
-          Allsvenskan · Superettan · Damallsvenskan · Elitettan · Championship — free to play
+          Allsvenskan · Superettan · Damallsvenskan · Elitettan · Championship — {tr('free to play', 'gratis att spela')}
         </span>
       </div>
     ),

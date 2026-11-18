@@ -8,6 +8,7 @@ import { LEAGUE_ORDER, leagueStyle } from '@/lib/leagues';
 import { formatTeamName } from '@/lib/formatTeamName';
 import { Button } from '@/components/ui/Button';
 import type { League, NotificationPrefs, Team } from '@/types/api';
+import { useI18n } from '@/lib/i18n-client';
 
 function Toggle({
   checked,
@@ -42,6 +43,7 @@ function toggleIn<T>(list: T[], item: T): T[] {
 
 export default function NotificationSettingsPage() {
   const { user, loading } = useRequireAuth();
+  const { tr } = useI18n();
   const [prefs, setPrefs] = useState<NotificationPrefs | null>(null);
   const [teams, setTeams] = useState<Team[]>([]);
   const [saving, setSaving] = useState(false);
@@ -62,7 +64,7 @@ export default function NotificationSettingsPage() {
   if (loading || !user || !prefs) {
     return (
       <div className="flex items-center justify-center py-20">
-        <p className="text-white/50">Loading…</p>
+        <p className="text-white/50">{tr('Loading…', 'Laddar…')}</p>
       </div>
     );
   }
@@ -77,9 +79,9 @@ export default function NotificationSettingsPage() {
     try {
       const r = await api.put<NotificationPrefs>('/api/notifications/me', prefs);
       setPrefs(r.data);
-      setStatus({ ok: true, text: 'Saved.' });
+      setStatus({ ok: true, text: tr('Saved.', 'Sparat.') });
     } catch (err: any) {
-      setStatus({ ok: false, text: err.response?.data?.error ?? 'Could not save your settings' });
+      setStatus({ ok: false, text: err.response?.data?.error ?? tr('Could not save your settings', 'Inställningarna kunde inte sparas') });
     } finally {
       setSaving(false);
     }
@@ -90,39 +92,50 @@ export default function NotificationSettingsPage() {
   return (
     <div className="max-w-2xl mx-auto px-4 sm:px-6 py-10">
       <Link href="/settings" className="text-xs text-brand-400 hover:text-brand-300 transition-colors">
-        ← Settings
+        {tr('← Settings', '← Inställningar')}
       </Link>
-      <h1 className="text-4xl sm:text-5xl text-brand-500 mt-2 mb-2">Email notifications</h1>
-      <p className="text-white/50 mb-8">Sent to {user.email}. Every mail has a link to switch it off.</p>
+      <h1 className="text-4xl sm:text-5xl text-brand-500 mt-2 mb-2">{tr('Email notifications', 'E-postnotiser')}</h1>
+      <p className="text-white/50 mb-8">
+        {tr('Sent to', 'Skickas till')} {user.email}. {tr('Every mail has a link to switch it off.', 'Varje mejl har en länk för att stänga av det.')}
+      </p>
 
       <div className="rounded-xl border border-white/10 overflow-hidden mb-8">
         <Toggle
           checked={prefs.notifyAuctionResults}
           onChange={(v) => update({ notifyAuctionResults: v })}
-          title="Auction results"
-          detail="When your auctions settle: which coupons you won, what they cost, and which bids lost."
+          title={tr('Auction results', 'Auktionsresultat')}
+          detail={tr(
+            'When your auctions settle: which coupons you won, what they cost, and which bids lost.',
+            'När dina auktioner avgörs: vilka kuponger du vann, vad de kostade och vilka bud som förlorade.',
+          )}
         />
         <Toggle
           checked={prefs.notifyPayouts}
           onChange={(v) => update({ notifyPayouts: v })}
-          title="Contract fulfilled"
-          detail="When a contract you hold a coupon for comes in and pays out."
+          title={tr('Contract fulfilled', 'Kontrakt uppfyllt')}
+          detail={tr('When a contract you hold a coupon for comes in and pays out.', 'När ett kontrakt du har en kupong på går in och betalar ut.')}
         />
         <Toggle
           checked={prefs.notifyNewContracts}
           onChange={(v) => update({ notifyNewContracts: v })}
-          title="New contracts"
-          detail="Every Wednesday, when the week's contracts open for bidding."
+          title={tr('New contracts', 'Nya kontrakt')}
+          detail={tr("Every Wednesday, when the week's contracts open for bidding.", 'Varje onsdag, när veckans kontrakt öppnar för bud.')}
         />
       </div>
 
       {prefs.notifyNewContracts && (
         <section className="mb-8">
-          <h2 className="text-sm font-bold text-orange-300 uppercase tracking-widest mb-1">Your favourites</h2>
+          <h2 className="text-sm font-bold text-orange-300 uppercase tracking-widest mb-1">{tr('Your favourites', 'Dina favoriter')}</h2>
           <p className="text-sm text-white/40 mb-4">
             {favouriteCount === 0
-              ? 'Pick none and you hear about every new contract. Pick some and you only hear about those.'
-              : 'You only hear about contracts for these leagues and teams. A week with none of them sends nothing.'}
+              ? tr(
+                  'Pick none and you hear about every new contract. Pick some and you only hear about those.',
+                  'Välj inga så får du höra om alla nya kontrakt. Välj några så får du bara höra om dem.',
+                )
+              : tr(
+                  'You only hear about contracts for these leagues and teams. A week with none of them sends nothing.',
+                  'Du får bara höra om kontrakt för de här ligorna och lagen. En vecka utan något av dem skickas inget.',
+                )}
           </p>
 
           {LEAGUE_ORDER.map((league) => {
@@ -139,7 +152,7 @@ export default function NotificationSettingsPage() {
                     className="h-4 w-4 accent-brand-500"
                   />
                   <span className={`font-semibold ${style.text}`}>{style.label}</span>
-                  <span className="text-xs text-white/30">— the whole league</span>
+                  <span className="text-xs text-white/30">{tr('— the whole league', '— hela ligan')}</span>
                 </label>
                 {/* A whole league already covers its teams, so the picker hides. */}
                 {!leagueOn && leagueTeams.length > 0 && (
@@ -171,7 +184,7 @@ export default function NotificationSettingsPage() {
 
       <div className="flex items-center gap-4">
         <Button onClick={save} loading={saving}>
-          Save
+          {tr('Save', 'Spara')}
         </Button>
         {status && <p className={`text-sm ${status.ok ? 'text-green-400' : 'text-red-400'}`}>{status.text}</p>}
       </div>
