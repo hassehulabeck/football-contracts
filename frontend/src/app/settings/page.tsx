@@ -24,10 +24,12 @@ function Row({ href, title, detail }: { href: string; title: string; detail: str
 
 /**
  * Asks for the password again: the server requires it, so a browser left
- * signed in cannot be used to delete someone's account.
+ * signed in cannot be used to delete someone's account. An account made with
+ * Google sign-in has no password the player knows, so it types DELETE.
  */
 function DeleteAccount() {
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
+  const needsPassword = user?.hasPassword ?? true;
   const [open, setOpen] = useState(false);
   const [password, setPassword] = useState('');
   const [understood, setUnderstood] = useState(false);
@@ -39,7 +41,7 @@ function DeleteAccount() {
     setError('');
     setBusy(true);
     try {
-      await api.delete('/api/users/me', { data: { password } });
+      await api.delete('/api/users/me', { data: needsPassword ? { password } : { confirm: password } });
       logout();
       // A full load rather than router.push: this page's auth guard sees the
       // user vanish and would win the race, landing them on the login form.
@@ -64,14 +66,25 @@ function DeleteAccount() {
         This erases your account, bids, credit history and settings for good. Coupons you hold
         stay in the game without an owner and will not pay out to anyone. It cannot be undone.
       </p>
-      <Input
-        label="Your password"
-        type="password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        required
-        autoComplete="current-password"
-      />
+      {needsPassword ? (
+        <Input
+          label="Your password"
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          autoComplete="current-password"
+        />
+      ) : (
+        <Input
+          label="Type DELETE to confirm"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          autoComplete="off"
+          autoCapitalize="characters"
+        />
+      )}
       <label className="flex items-center gap-2 text-sm text-white/70 cursor-pointer">
         <input
           type="checkbox"
@@ -83,7 +96,7 @@ function DeleteAccount() {
       </label>
       {error && <p className="text-red-400 text-sm">{error}</p>}
       <div className="flex gap-3">
-        <Button type="submit" loading={busy} disabled={!understood || !password} className="bg-red-600! hover:bg-red-700!">
+        <Button type="submit" loading={busy} disabled={!understood || (needsPassword ? !password : password !== 'DELETE')} className="bg-red-600! hover:bg-red-700!">
           Delete account
         </Button>
         <Button type="button" variant="ghost" onClick={() => setOpen(false)}>

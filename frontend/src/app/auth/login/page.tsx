@@ -8,6 +8,7 @@ import { useAuth } from '@/lib/auth';
 import { takePendingInvite } from '@/lib/miniLeagues';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { GoogleSignIn } from '@/components/GoogleSignIn';
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -59,6 +60,8 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         <h1 className="text-4xl text-brand-500 mb-2">Log in</h1>
         <p className="text-white/50 mb-8">Good to have you back.</p>
+
+        <GoogleSignIn />
 
         <form onSubmit={submit} className="flex flex-col gap-5">
           <Input

@@ -4,6 +4,7 @@ import { z } from 'zod';
 import crypto from 'crypto';
 import { sendActivationEmail, sendPasswordResetEmail } from '../lib/email';
 import { STARTING_CREDITS } from '../lib/ledger';
+import { GOOGLE_CLIENT_ID, verifyGoogleCredential } from '../lib/googleAuth';
 
 const registerSchema = z.object({
   email: z.string().email(),
@@ -35,6 +36,13 @@ const resetPasswordSchema = z.object({
 });
 
 const RESET_TOKEN_TTL_MS = 60 * 60_000;
+
+const googleSchema = z.object({ credential: z.string().min(20).max(5000) });
+
+/** A password hash nobody can match: for accounts that sign in with Google. */
+async function unguessablePasswordHash() {
+  return bcrypt.hash(crypto.randomBytes(32).toString('hex'), 12);
+}
 
 // Same reply whether or not the account exists, so this endpoint can't be
 // used to probe which emails are registered.
@@ -172,6 +180,7 @@ export async function authRoutes(server: FastifyInstance) {
       where: { id: user.id },
       data: {
         passwordHash,
+        passwordSet: true,
         passwordResetTokenHash: null,
         passwordResetExpiresAt: null,
         emailVerified: true,
@@ -199,19 +208,87 @@ export async function authRoutes(server: FastifyInstance) {
       return reply.status(403).send({ error: 'EMAIL_NOT_VERIFIED', message: 'Please verify your email first' });
     }
 
-    const token = server.jwt.sign({ sub: user.id, email: user.email });
+    return reply.send(signedIn(user));
+  });
 
-    // username rides along so the client knows immediately whether to send the
-    // player to /settings/username, without a second round trip to /users/me.
-    return reply.send({
-      token,
+  /**
+   * The token and user a successful login answers with. username rides along
+   * so the client knows immediately whether to send the player to
+   * /settings/username, without a second round trip to /users/me.
+   */
+  function signedIn(user: {
+    id: string;
+    email: string;
+    credits: number;
+    username: string | null;
+    isAdmin: boolean;
+    passwordSet: boolean;
+  }) {
+    return {
+      token: server.jwt.sign({ sub: user.id, email: user.email }),
       user: {
         id: user.id,
         email: user.email,
         credits: user.credits,
         username: user.username,
         isAdmin: user.isAdmin,
+        hasPassword: user.passwordSet,
       },
-    });
+    };
+  }
+
+  /** Lets the frontend ask whether Google sign-in is switched on here. */
+  server.get('/google/config', async () => ({ enabled: GOOGLE_CLIENT_ID !== null }));
+
+  /**
+   * Sign in, or sign up, with a Google ID token. One endpoint for both: the
+   * player pressed "Continue with Google" and should end up logged in either
+   * way. Google has verified the address, so there is no activation email.
+   */
+  server.post('/google', async (req, reply) => {
+    if (!GOOGLE_CLIENT_ID) return reply.status(404).send({ error: 'Google sign-in is not enabled' });
+    const { credential } = googleSchema.parse(req.body);
+
+    const google = await verifyGoogleCredential(credential);
+    if (!google) return reply.status(401).send({ error: 'Google sign-in failed — please try again' });
+
+    // By Google id first, then by address. Emails were stored as typed at
+    // registration, so the address match ignores case.
+    let user =
+      (await server.prisma.user.findUnique({ where: { googleId: google.sub } })) ??
+      (await server.prisma.user.findFirst({ where: { email: { equals: google.email, mode: 'insensitive' } } }));
+
+    if (user && user.googleId !== google.sub) {
+      // First Google sign-in for an existing account: link it. If the account
+      // was never activated, whoever registered it never proved they own the
+      // address — it could be someone squatting on it — so their password is
+      // replaced rather than kept working alongside the real owner's Google.
+      const squatted = !user.emailVerified;
+      user = await server.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          googleId: google.sub,
+          emailVerified: true,
+          activationToken: null,
+          ...(squatted ? { passwordHash: await unguessablePasswordHash(), passwordSet: false } : {}),
+        },
+      });
+    }
+
+    if (!user) {
+      user = await server.prisma.user.create({
+        data: {
+          email: google.email,
+          googleId: google.sub,
+          passwordHash: await unguessablePasswordHash(),
+          passwordSet: false,
+          emailVerified: true,
+          credits: STARTING_CREDITS,
+          creditTransactions: { create: { amount: STARTING_CREDITS, type: 'STARTING_BALANCE' } },
+        },
+      });
+    }
+
+    return reply.send(signedIn(user));
   });
 }

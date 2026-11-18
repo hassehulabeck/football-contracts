@@ -13,6 +13,11 @@ interface AuthUser {
   usernameChangedAt: string | null;
   /** Shows the Admin link. Cosmetic — every admin request is re-checked server-side. */
   isAdmin: boolean;
+  /**
+   * False for an account made through Google sign-in, which has no password
+   * the player knows; account deletion then asks them to type DELETE.
+   */
+  hasPassword: boolean;
 }
 
 interface AuthContextValue {
@@ -46,6 +51,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         username: res.data.username ?? null,
         usernameChangedAt: res.data.usernameChangedAt ?? null,
         isAdmin: res.data.isAdmin ?? false,
+        hasPassword: res.data.hasPassword ?? true,
       }))
       .catch(() => localStorage.removeItem('fc_token'))
       .finally(() => setLoading(false));
@@ -62,6 +68,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       username: user.username ?? null,
       usernameChangedAt: user.usernameChangedAt ?? null,
       isAdmin: user.isAdmin ?? false,
+      hasPassword: user.hasPassword ?? true,
     });
   };
 

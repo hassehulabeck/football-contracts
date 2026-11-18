@@ -86,6 +86,14 @@ model User {
   id              String    @id @default(cuid())
   email           String    @unique
   passwordHash    String
+  // False for an account created through Google sign-in: its passwordHash is
+  // a hash of random bytes nobody knows. Account deletion asks such a player
+  // to type DELETE instead of a password; setting one via forgot-password
+  // flips it back.
+  passwordSet     Boolean   @default(true)
+  // Google's stable account id ("sub"), once the player has signed in with
+  // Google. Matched before email, so a changed Gmail address still logs in.
+  googleId        String?   @unique
   emailVerified   Boolean   @default(false)
   activationToken String?   @unique
   // Null until the first activation email goes out. Lets the resend route

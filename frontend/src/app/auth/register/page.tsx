@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { GoogleSignIn } from '@/components/GoogleSignIn';
 
 export default function RegisterPage() {
   const [email, setEmail] = useState('');
@@ -68,6 +69,8 @@ export default function RegisterPage() {
       <div className="w-full max-w-sm">
         <h1 className="text-4xl text-brand-500 mb-2">Create account</h1>
         <p className="text-white/50 mb-8">You start with 1 000 credits.</p>
+
+        <GoogleSignIn />
 
         <form onSubmit={submit} className="flex flex-col gap-5">
           <Input
