@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { takePendingInvite } from '@/lib/miniLeagues';
+import { useI18n } from '@/lib/i18n-client';
 
 const CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID?.trim() || '';
 const SCRIPT_SRC = 'https://accounts.google.com/gsi/client';
@@ -48,6 +49,7 @@ function loadScript(): Promise<void> {
  */
 export function GoogleSignIn() {
   const { login } = useAuth();
+  const { locale, tr } = useI18n();
   const router = useRouter();
   const box = useRef<HTMLDivElement>(null);
   const [error, setError] = useState('');
@@ -59,14 +61,14 @@ export function GoogleSignIn() {
     const onCredential = async ({ credential }: { credential: string }) => {
       setError('');
       try {
-        const res = await api.post('/api/auth/google', { credential });
+        const res = await api.post('/api/auth/google', { credential, locale });
         login(res.data.token, res.data.user);
         // Same as the password login: an invite in progress comes first. A
         // new account has no username yet, and the gate takes it from there.
         const invite = takePendingInvite();
         router.push(invite ? `/join/${invite}` : '/dashboard');
       } catch (err: any) {
-        setError(err.response?.data?.error ?? 'Google sign-in failed — please try again');
+        setError(err.response?.data?.error ?? tr('Google sign-in failed — please try again', 'Inloggningen med Google misslyckades — försök igen'));
       }
     };
 
@@ -81,14 +83,15 @@ export function GoogleSignIn() {
           shape: 'pill',
           text: 'continue_with',
           width: Math.min(box.current.offsetWidth || 320, 400),
+          locale: locale === 'sv' ? 'sv' : 'en',
         });
       })
-      .catch(() => !cancelled && setError('Google sign-in could not load. You can still use your email below.'));
+      .catch(() => !cancelled && setError(tr('Google sign-in could not load. You can still use your email below.', 'Inloggning med Google kunde inte laddas. Du kan fortfarande använda din e-post nedan.')));
 
     return () => {
       cancelled = true;
     };
-  }, [login, router]);
+  }, [login, router, locale, tr]);
 
   if (!CLIENT_ID) return null;
 
@@ -98,7 +101,7 @@ export function GoogleSignIn() {
       {error && <p className="text-red-400 text-sm mt-2">{error}</p>}
       <div className="flex items-center gap-3 mt-6 text-white/30 text-xs uppercase tracking-widest">
         <span className="flex-1 border-t border-white/10" />
-        or with email
+        {tr('or with email', 'eller med e-post')}
         <span className="flex-1 border-t border-white/10" />
       </div>
     </div>

@@ -5,6 +5,7 @@ import crypto from 'crypto';
 import { sendActivationEmail, sendPasswordResetEmail } from '../lib/email';
 import { STARTING_CREDITS } from '../lib/ledger';
 import { GOOGLE_CLIENT_ID, verifyGoogleCredential } from '../lib/googleAuth';
+import { asLocale, localeSchema } from '../lib/i18n';
 
 const registerSchema = z.object({
   email: z.string().email(),
@@ -39,7 +40,7 @@ const resetPasswordSchema = z.object({
 
 const RESET_TOKEN_TTL_MS = 60 * 60_000;
 
-const googleSchema = z.object({ credential: z.string().min(20).max(5000) });
+const googleSchema = z.object({ credential: z.string().min(20).max(5000), locale: localeSchema.optional() });
 
 /** A password hash nobody can match: for accounts that sign in with Google. */
 async function unguessablePasswordHash() {
@@ -226,6 +227,7 @@ export async function authRoutes(server: FastifyInstance) {
     username: string | null;
     isAdmin: boolean;
     passwordSet: boolean;
+    locale: string;
   }) {
     return {
       token: server.jwt.sign({ sub: user.id, email: user.email }),
@@ -236,6 +238,7 @@ export async function authRoutes(server: FastifyInstance) {
         username: user.username,
         isAdmin: user.isAdmin,
         hasPassword: user.passwordSet,
+        locale: asLocale(user.locale),
       },
     };
   }
@@ -250,7 +253,7 @@ export async function authRoutes(server: FastifyInstance) {
    */
   server.post('/google', async (req, reply) => {
     if (!GOOGLE_CLIENT_ID) return reply.status(404).send({ error: 'Google sign-in is not enabled' });
-    const { credential } = googleSchema.parse(req.body);
+    const { credential, locale } = googleSchema.parse(req.body);
 
     const google = await verifyGoogleCredential(credential);
     if (!google) return reply.status(401).send({ error: 'Google sign-in failed — please try again' });
@@ -286,6 +289,7 @@ export async function authRoutes(server: FastifyInstance) {
           passwordHash: await unguessablePasswordHash(),
           passwordSet: false,
           emailVerified: true,
+          locale: locale ?? 'en',
           credits: STARTING_CREDITS,
           creditTransactions: { create: { amount: STARTING_CREDITS, type: 'STARTING_BALANCE' } },
         },

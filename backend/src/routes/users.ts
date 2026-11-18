@@ -49,6 +49,7 @@ export async function userRoutes(server: FastifyInstance) {
         isAdmin: true,
         // Decides whether account deletion asks for a password or for DELETE.
         passwordSet: true,
+        locale: true,
         createdAt: true,
         coupons: {
           include: {
