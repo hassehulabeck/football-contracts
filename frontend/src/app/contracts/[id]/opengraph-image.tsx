@@ -5,6 +5,7 @@ import { LEAGUES } from '@/lib/leagues';
 import { crestDataUrl, renderSiteCard, OG, OG_SIZE, OgMark, OgResultTile } from '@/lib/ogImage';
 import { patternDescription } from '@/lib/patterns';
 import { SITE_NAME } from '@/lib/site';
+import { getI18n } from '@/lib/i18n-server';
 
 // The preview a shared contract link unfurls into: team, pattern, and where
 // the auction stands. Regenerated at most every five minutes (fetchPublic's
@@ -24,10 +25,10 @@ const LEAGUE_HEX: Record<string, string> = {
 
 export default async function Image({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const contract = await fetchContractMeta(id);
+  const [contract, { locale, tr }] = await Promise.all([fetchContractMeta(id), getI18n()]);
 
   // Unknown or unreachable contract: the site's own card, not an error image.
-  if (!contract) return renderSiteCard();
+  if (!contract) return renderSiteCard(locale);
 
   const crest = await crestDataUrl(contract.team.externalId);
   const leagueColour = LEAGUE_HEX[contract.team.league] ?? OG.muted;
@@ -37,7 +38,7 @@ export default async function Image({ params }: { params: Promise<{ id: string }
 
   // "Auction open until … · 5 coupons" reads as a headline and a detail line;
   // on one line it wrapped mid-phrase.
-  const [headline, ...detail] = contractStatusLine(contract).split(' · ');
+  const [headline, ...detail] = contractStatusLine(contract, locale).split(' · ');
 
   return new ImageResponse(
     (
@@ -79,7 +80,7 @@ export default async function Image({ params }: { params: Promise<{ id: string }
             <span style={{ fontSize: 72, fontWeight: 700, color: OG.cream, lineHeight: 1.05 }}>
               {formatTeamName(contract.team.name)}
             </span>
-            <span style={{ fontSize: 34, color: OG.muted }}>{patternDescription(contract.pattern)}</span>
+            <span style={{ fontSize: 34, color: OG.muted }}>{patternDescription(contract.pattern, locale)}</span>
           </div>
         </div>
 
@@ -95,7 +96,7 @@ export default async function Image({ params }: { params: Promise<{ id: string }
             </span>
             {(detail.length > 0 || !resolved) && (
               <span style={{ fontSize: 24, color: OG.muted, textAlign: 'right' }}>
-                {[...detail, ...(resolved ? [] : ['each pays 100 credits if it happens'])].join(' · ')}
+                {[...detail, ...(resolved ? [] : [tr('each pays 100 credits if it happens', 'var och en ger 100 krediter om det händer')])].join(' · ')}
               </span>
             )}
           </div>

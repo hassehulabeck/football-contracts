@@ -5,28 +5,26 @@ import { formatTeamName } from '@/lib/formatTeamName';
 import { HomeAway, MatchRow } from '@/components/MatchRow';
 import { TeamLogo } from '@/components/TeamLogo';
 import type { ScheduleFixture, TeamScheduleData } from '@/types/api';
+import { useI18n } from '@/lib/i18n-client';
+import { dateLocale } from '@/lib/i18n';
 
 /** How many rows each section shows before "see more". */
 const PREVIEW_COUNT = 5;
 
-const FIXTURE_STATUS_LABEL: Record<string, string> = {
-  POSTPONED: 'Postponed',
-  CANCELLED: 'Cancelled',
-};
-
 export function TeamSchedule({ upcoming, recent }: TeamScheduleData) {
+  const { tr } = useI18n();
   return (
     <div className="grid gap-6">
       <Section
-        title="Upcoming"
+        title={tr('Upcoming', 'Kommande')}
         rows={upcoming}
-        empty="No fixtures scheduled — the season may be over."
+        empty={tr('No fixtures scheduled — the season may be over.', 'Inga matcher inplanerade — säsongen kan vara slut.')}
         render={(f, i) => <FixtureRow key={i} fixture={f} />}
       />
       <Section
-        title="Recent results"
+        title={tr('Recent results', 'Senaste resultat')}
         rows={recent}
-        empty="No results recorded for this team yet."
+        empty={tr('No results recorded for this team yet.', 'Inga resultat registrerade för laget än.')}
         render={(m, i) => <MatchRow key={i} match={m} />}
       />
     </div>
@@ -44,6 +42,7 @@ function Section<T>({
   empty: string;
   render: (row: T, index: number) => React.ReactNode;
 }) {
+  const { tr } = useI18n();
   const [expanded, setExpanded] = useState(false);
   const shown = expanded ? rows : rows.slice(0, PREVIEW_COUNT);
   const hidden = rows.length - shown.length;
@@ -67,7 +66,7 @@ function Section<T>({
               onClick={() => setExpanded(!expanded)}
               className="text-brand-400 hover:text-brand-300 text-xs font-bold uppercase tracking-wide mt-3 transition-colors"
             >
-              {expanded ? 'Show less' : `See ${hidden} more`}
+              {expanded ? tr('Show less', 'Visa färre') : tr(`See ${hidden} more`, `Visa ${hidden} till`)}
             </button>
           )}
         </>
@@ -81,12 +80,14 @@ function Section<T>({
  * score to show, and a placeholder in those columns would read as 0–0.
  */
 function FixtureRow({ fixture }: { fixture: ScheduleFixture }) {
+  const { locale, tr } = useI18n();
   const off = fixture.status === 'POSTPONED' || fixture.status === 'CANCELLED';
+  const statusLabel = fixture.status === 'POSTPONED' ? tr('Postponed', 'Uppskjuten') : tr('Cancelled', 'Inställd');
 
   return (
     <tr className="border-b border-white/5 last:border-0">
       <td className="px-2 sm:px-3 py-2.5 tabular text-white/40 text-xs whitespace-nowrap">
-        {new Date(fixture.kickoffAt).toLocaleDateString('sv-SE', {
+        {new Date(fixture.kickoffAt).toLocaleDateString(dateLocale(locale), {
           month: 'short',
           day: 'numeric',
         })}
@@ -94,7 +95,7 @@ function FixtureRow({ fixture }: { fixture: ScheduleFixture }) {
       <td className="px-2 sm:px-3 py-2.5 tabular text-white/30 text-xs whitespace-nowrap">
         {/* A TBD fixture still carries a date, so the time can be a placeholder
             00:00. Shown anyway — it is what the API knows. */}
-        {new Date(fixture.kickoffAt).toLocaleTimeString('sv-SE', {
+        {new Date(fixture.kickoffAt).toLocaleTimeString(dateLocale(locale), {
           hour: '2-digit',
           minute: '2-digit',
         })}
@@ -102,18 +103,18 @@ function FixtureRow({ fixture }: { fixture: ScheduleFixture }) {
       <td className={`px-2 sm:px-3 py-2.5 ${off ? 'text-white/30 line-through' : 'text-white/50'}`}>
         {fixture.opponent ? (
           <span className="inline-flex items-center gap-1.5">
-            <span className="text-white/30 hidden sm:inline">vs</span>
+            <span className="text-white/30 hidden sm:inline">{tr('vs', 'mot')}</span>
             <TeamLogo externalId={fixture.opponentTeamId} className="w-3.5 h-3.5" />
             {formatTeamName(fixture.opponent)}
           </span>
         ) : (
-          <span className="text-white/25">Opponent unknown</span>
+          <span className="text-white/25">{tr('Opponent unknown', 'Okänd motståndare')}</span>
         )}
       </td>
       <td className="px-2 sm:px-3 py-2.5 text-right whitespace-nowrap">
         {off ? (
           <span className="text-orange-300/70 text-xs font-semibold uppercase tracking-wide">
-            {FIXTURE_STATUS_LABEL[fixture.status]}
+            {statusLabel}
           </span>
         ) : (
           <span className="text-white/30 text-xs">

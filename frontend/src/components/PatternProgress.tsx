@@ -1,4 +1,8 @@
+'use client';
+
 import { formatTeamName } from '@/lib/formatTeamName';
+import { useI18n } from '@/lib/i18n-client';
+import { dateLocale, type Locale, type Tr } from '@/lib/i18n';
 import { RESULT_STYLE } from './MatchRow';
 import type { FulfillmentMatch, PatternProgressData } from '@/types/api';
 
@@ -22,16 +26,16 @@ const MATCHED_RING: Record<string, string> = {
 };
 
 /** "W 2–1 vs Häcken, 8 aug" — what a lit letter is standing on. */
-function describe(match: FulfillmentMatch) {
+function describe(match: FulfillmentMatch, locale: Locale, tr: Tr) {
   // homeScore/awayScore are stored home-first, so flip them for an away match.
   const [own, other] = match.isHome
     ? [match.homeScore, match.awayScore]
     : [match.awayScore, match.homeScore];
-  const date = new Date(match.playedAt).toLocaleDateString('sv-SE', {
+  const date = new Date(match.playedAt).toLocaleDateString(dateLocale(locale), {
     month: 'short',
     day: 'numeric',
   });
-  const opponent = match.opponent ? ` vs ${formatTeamName(match.opponent)}` : '';
+  const opponent = match.opponent ? ` ${tr('vs', 'mot')} ${formatTeamName(match.opponent)}` : '';
   return `${match.result} ${own}–${other}${opponent}, ${date}`;
 }
 
@@ -49,12 +53,13 @@ export function PatternProgress({
   pattern: string;
   progress?: PatternProgressData;
 }) {
+  const { locale, tr } = useI18n();
   const letters = pattern.split('');
   const matched = progress?.matched ?? 0;
 
   return (
     <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-      <p className="text-white/40 text-xs uppercase tracking-wide mb-2">Pattern</p>
+      <p className="text-white/40 text-xs uppercase tracking-wide mb-2">{tr('Pattern', 'Mönster')}</p>
 
       <div className="flex gap-1.5 mb-2">
         {letters.map((letter, i) => {
@@ -63,9 +68,9 @@ export function PatternProgress({
           return (
             <span
               key={i}
-              title={match ? describe(match) : undefined}
+              title={match ? describe(match, locale, tr) : undefined}
               aria-label={
-                isMatched && match ? `${letter}, matched: ${describe(match)}` : `${letter}, not yet`
+                isMatched && match ? `${letter}, ${tr('matched', 'klar')}: ${describe(match, locale, tr)}` : `${letter}, ${tr('not yet', 'inte än')}`
               }
               className={`inline-flex items-center justify-center w-8 h-8 rounded border font-mono font-bold ${
                 isMatched
@@ -82,16 +87,16 @@ export function PatternProgress({
       {progress && (
         <p className="text-xs text-white/40">
           {progress.complete ? (
-            <span className="text-green-400 font-semibold">Pattern complete</span>
+            <span className="text-green-400 font-semibold">{tr('Pattern complete', 'Mönstret är fullbordat')}</span>
           ) : matched > 0 ? (
             <>
               <span className="tabular text-white/60 font-semibold">
-                {matched} of {letters.length}
+                {matched} {tr('of', 'av')} {letters.length}
               </span>{' '}
-              matched
+              {tr('matched', 'klara')}
             </>
           ) : (
-            'No run in progress'
+            tr('No run in progress', 'Ingen svit pågår')
           )}
         </p>
       )}

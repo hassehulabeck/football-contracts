@@ -2,21 +2,31 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth';
+import { useI18n } from '@/lib/i18n-client';
+import { dateLocale, formatNumber, type Locale, type Tr } from '@/lib/i18n';
 import type { LeaderboardBoard, LeaderboardEntry } from '@/types/api';
 
-const TABS: { board: LeaderboardBoard; label: string; blurb: string }[] = [
-  {
-    board: 'profit',
-    label: 'Profit',
-    blurb: 'Ranked by profit: payouts won minus what coupons cost. Your starting credits do not count.',
-  },
-  {
-    board: 'month',
-    label: 'Month',
-    blurb: 'Profit made in one calendar month, counted when credits moved: a coupon bought this month and paid out next month counts as a loss now and a gain then.',
-  },
-  { board: 'credits', label: 'Credits', blurb: 'Ranked by current balance.' },
-];
+function tabs(tr: Tr): { board: LeaderboardBoard; label: string; blurb: string }[] {
+  return [
+    {
+      board: 'profit',
+      label: tr('Profit', 'Vinst'),
+      blurb: tr(
+        'Ranked by profit: payouts won minus what coupons cost. Your starting credits do not count.',
+        'Rankad efter vinst: utbetalningar minus vad kupongerna kostade. Startkrediterna räknas inte.',
+      ),
+    },
+    {
+      board: 'month',
+      label: tr('Month', 'Månad'),
+      blurb: tr(
+        'Profit made in one calendar month, counted when credits moved: a coupon bought this month and paid out next month counts as a loss now and a gain then.',
+        'Vinst under en kalendermånad, räknad när krediterna rörde sig: en kupong köpt den här månaden och utbetald nästa räknas som en förlust nu och en vinst då.',
+      ),
+    },
+    { board: 'credits', label: tr('Credits', 'Krediter'), blurb: tr('Ranked by current balance.', 'Rankad efter nuvarande saldo.') },
+  ];
+}
 
 /** The current month in Stockholm as "YYYY-MM". */
 function thisMonth(): string {
@@ -31,17 +41,17 @@ function shiftMonth(month: string, by: number): string {
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
 }
 
-function monthLabel(month: string): string {
+function monthLabel(month: string, locale: Locale): string {
   const [y, m] = month.split('-').map(Number);
-  return new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString('en-GB', {
+  return new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString(dateLocale(locale), {
     month: 'long',
     year: 'numeric',
     timeZone: 'UTC',
   });
 }
 
-function signed(n: number): string {
-  return `${n > 0 ? '+' : n < 0 ? '−' : ''}${Math.abs(n).toLocaleString()}`;
+function signed(n: number, locale: Locale): string {
+  return `${n > 0 ? '+' : n < 0 ? '−' : ''}${formatNumber(locale, Math.abs(n))}`;
 }
 
 interface StandingsBoardProps {
@@ -64,9 +74,11 @@ export function StandingsBoard({
   load,
   reloadKey,
   footnote = '',
-  emptyText = 'No players yet.',
+  emptyText,
   rowAction,
 }: StandingsBoardProps) {
+  const { locale, tr } = useI18n();
+  const TABS = tabs(tr);
   const { user } = useAuth();
   const [board, setBoard] = useState<LeaderboardBoard>('profit');
   const [month, setMonth] = useState(thisMonth);
@@ -110,16 +122,16 @@ export function StandingsBoard({
           <button
             onClick={() => setMonth((m) => shiftMonth(m, -1))}
             className="text-brand-400 hover:text-brand-300 font-bold px-2"
-            aria-label="Previous month"
+            aria-label={tr('Previous month', 'Föregående månad')}
           >
             ‹
           </button>
-          <span className="text-orange-100 font-semibold w-36 text-center">{monthLabel(month)}</span>
+          <span className="text-orange-100 font-semibold w-36 text-center">{monthLabel(month, locale)}</span>
           <button
             onClick={() => setMonth((m) => shiftMonth(m, 1))}
             disabled={month >= thisMonth()}
             className="text-brand-400 hover:text-brand-300 font-bold px-2 disabled:opacity-20 disabled:cursor-default"
-            aria-label="Next month"
+            aria-label={tr('Next month', 'Nästa månad')}
           >
             ›
           </button>
@@ -129,26 +141,26 @@ export function StandingsBoard({
       <p className="text-white/50 text-sm mb-2">{tab.blurb}{footnote ? ` ${footnote}` : ''}</p>
       {myRank >= 0 ? (
         <p className="text-sm text-brand-400 font-semibold mb-8">
-          Your rank: <span className="tabular font-black">#{myRank + 1}</span>
-          <span className="text-white/30 font-normal ml-2">of {entries.length}</span>
+          {tr('Your rank', 'Din placering')}: <span className="tabular font-black">#{myRank + 1}</span>
+          <span className="text-white/30 font-normal ml-2">{tr('of', 'av')} {entries.length}</span>
         </p>
       ) : (
         <div className="mb-8" />
       )}
 
       {loading ? (
-        <p className="text-white/50 text-center py-16">Loading…</p>
+        <p className="text-white/50 text-center py-16">{tr('Loading…', 'Laddar…')}</p>
       ) : entries.length === 0 ? (
-        <p className="text-white/30 text-center py-16">{emptyText}</p>
+        <p className="text-white/30 text-center py-16">{emptyText ?? tr('No players yet.', 'Inga spelare än.')}</p>
       ) : (
         <div className="rounded-xl border border-white/10 overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-white/10 text-white/40 text-left">
                 <th className="px-2 sm:px-4 py-3 font-medium w-12">#</th>
-                <th className="px-2 sm:px-4 py-3 font-medium">Player</th>
-                {showProfit && <th className="px-2 sm:px-4 py-3 font-medium tabular text-right">Profit</th>}
-                <th className="px-2 sm:px-4 py-3 font-medium tabular text-right">Credits</th>
+                <th className="px-2 sm:px-4 py-3 font-medium">{tr('Player', 'Spelare')}</th>
+                {showProfit && <th className="px-2 sm:px-4 py-3 font-medium tabular text-right">{tr('Profit', 'Vinst')}</th>}
+                <th className="px-2 sm:px-4 py-3 font-medium tabular text-right">{tr('Credits', 'Krediter')}</th>
                 {rowAction && <th className="px-2 sm:px-4 py-3" />}
               </tr>
             </thead>
@@ -171,7 +183,7 @@ export function StandingsBoard({
                       </span>
                       {isMe && (
                         <span className="ml-2 text-xs text-brand-400 font-bold uppercase tracking-widest">
-                          you
+                          {tr('you', 'du')}
                         </span>
                       )}
                     </td>
@@ -181,7 +193,7 @@ export function StandingsBoard({
                           profit > 0 ? 'text-green-400' : profit < 0 ? 'text-orange-300' : 'text-white/40'
                         }`}
                       >
-                        {signed(profit)}
+                        {signed(profit, locale)}
                       </td>
                     )}
                     <td
@@ -189,7 +201,7 @@ export function StandingsBoard({
                         showProfit ? 'text-white/50' : 'font-black text-brand-400 text-base'
                       }`}
                     >
-                      {entry.credits.toLocaleString()}
+                      {formatNumber(locale, entry.credits)}
                     </td>
                     {rowAction && <td className="px-2 sm:px-4 py-3 text-right">{rowAction(entry)}</td>}
                   </tr>

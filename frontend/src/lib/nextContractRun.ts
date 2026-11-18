@@ -1,3 +1,4 @@
+import { dateLocale, type Locale } from './i18n';
 /**
  * When the next batch of contracts is built.
  *
@@ -84,10 +85,10 @@ export function nextContractRun(now: Date = new Date()): Date {
 
 /**
  * Rendered in the reader's own timezone — a Swedish player sees the 03:00 the
- * rules page promises. Same `sv-SE` convention as the dates in the tables.
+ * rules page promises. Month and weekday names follow the site language.
  */
-export function formatContractRun(run: Date): string {
-  return run.toLocaleString('sv-SE', {
+export function formatContractRun(run: Date, locale: Locale = 'en'): string {
+  return run.toLocaleString(dateLocale(locale), {
     weekday: 'short',
     day: 'numeric',
     month: 'short',

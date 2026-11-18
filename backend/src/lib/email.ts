@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { Resend, type CreateEmailOptions } from 'resend';
+import { tr, type Locale } from './i18n';
 
 const resend = new Resend(process.env.RESEND_API_KEY!);
 const FROM = process.env.FROM_EMAIL ?? 'noreply@footballcontracts.app';
@@ -10,26 +11,36 @@ export function escapeHtml(s: string): string {
   return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 }
 
-export async function sendActivationEmail(email: string, token: string) {
+export async function sendActivationEmail(email: string, token: string, locale: Locale) {
   const url = `${FRONTEND_URL}/auth/activate?token=${token}`;
   await resend.emails.send({
     from: FROM,
     to: email,
-    subject: 'Activate your Football Contracts account',
-    html: `<p>Click the link below to activate your account:</p><p><a href="${url}">${url}</a></p>`,
+    subject: tr(locale, 'Activate your Football Contracts account', 'Aktivera ditt konto på Football Contracts'),
+    html:
+      `<p>${tr(locale, 'Click the link below to activate your account:', 'Klicka på länken nedan för att aktivera ditt konto:')}</p>` +
+      `<p><a href="${url}">${url}</a></p>`,
   });
 }
 
-export async function sendPasswordResetEmail(email: string, token: string) {
+export async function sendPasswordResetEmail(email: string, token: string, locale: Locale) {
   const url = `${FRONTEND_URL}/auth/reset-password?token=${token}`;
   await resend.emails.send({
     from: FROM,
     to: email,
-    subject: 'Reset your Football Contracts password',
+    subject: tr(locale, 'Reset your Football Contracts password', 'Återställ ditt lösenord på Football Contracts'),
     html:
-      `<p>Someone asked to reset the password for this account. Click the link below to choose a new one:</p>` +
+      `<p>${tr(
+        locale,
+        'Someone asked to reset the password for this account. Click the link below to choose a new one:',
+        'Någon har bett om att få återställa lösenordet för det här kontot. Klicka på länken nedan för att välja ett nytt:',
+      )}</p>` +
       `<p><a href="${url}">${url}</a></p>` +
-      `<p>The link works once and expires in an hour. If you didn't ask for this, you can ignore this email.</p>`,
+      `<p>${tr(
+        locale,
+        "The link works once and expires in an hour. If you didn't ask for this, you can ignore this email.",
+        'Länken fungerar en gång och slutar gälla om en timme. Om du inte bad om det här kan du strunta i mejlet.',
+      )}</p>`,
   });
 }
 

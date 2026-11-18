@@ -12,6 +12,7 @@ import { GoogleSignIn } from '@/components/GoogleSignIn';
 
 export default function LoginPage() {
   const { login } = useAuth();
+  const { tr } = useI18n();
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -35,9 +36,9 @@ export default function LoginPage() {
     } catch (err: any) {
       if (err.response?.data?.error === 'EMAIL_NOT_VERIFIED') {
         setUnverified(true);
-        setError(err.response?.data?.message ?? 'Please verify your email first');
+        setError(err.response?.data?.message ?? tr('Please verify your email first', 'Bekräfta din e-post först'));
       } else {
-        setError(err.response?.data?.error ?? 'Invalid email or password');
+        setError(err.response?.data?.error ?? tr('Invalid email or password', 'Fel e-post eller lösenord'));
       }
     } finally {
       setLoading(false);
@@ -51,21 +52,24 @@ export default function LoginPage() {
       setResendState('sent');
     } catch (err: any) {
       setResendState('idle');
-      setError(err.response?.data?.error ?? 'Something went wrong');
+      setError(err.response?.data?.error ?? tr('Something went wrong', 'Något gick fel'));
     }
   };
 
   return (
     <div className="flex flex-col items-center justify-center flex-1 px-4 py-20">
       <div className="w-full max-w-sm">
-        <h1 className="text-4xl text-brand-500 mb-2">Log in</h1>
-        <p className="text-white/50 mb-8">Good to have you back.</p>
+        <h1 className="text-4xl text-brand-500 mb-2">{tr('Log in', 'Logga in')}</h1>
+        <p className="text-white/50 mb-8">{tr('Good to have you back.', 'Kul att se dig igen.')}</p>
+
+        <GoogleSignIn />
 
         <GoogleSignIn />
 
         <form onSubmit={submit} className="flex flex-col gap-5">
           <Input
-            label="Email"
+            id="email"
+            label={tr('Email', 'E-post')}
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -73,19 +77,20 @@ export default function LoginPage() {
             autoFocus
           />
           <Input
-            label="Password"
+            id="password"
+            label={tr('Password', 'Lösenord')}
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
           />
           <Link href="/auth/forgot-password" className="text-brand-400 hover:text-brand-300 text-sm -mt-3 self-end">
-            Forgot password?
+            {tr('Forgot password?', 'Glömt lösenordet?')}
           </Link>
           {error && <p className="text-red-400 text-sm">{error}</p>}
           {unverified && (
             resendState === 'sent' ? (
-              <p className="text-orange-200 text-sm">Sent again — check your inbox.</p>
+              <p className="text-orange-200 text-sm">{tr('Sent again — check your inbox.', 'Skickat igen — kolla din inkorg.')}</p>
             ) : (
               <button
                 type="button"
@@ -93,19 +98,19 @@ export default function LoginPage() {
                 disabled={resendState === 'sending'}
                 className="text-brand-400 hover:text-brand-300 text-sm text-left disabled:opacity-50"
               >
-                {resendState === 'sending' ? 'Sending…' : 'Resend activation email'}
+                {resendState === 'sending' ? tr('Sending…', 'Skickar…') : tr('Resend activation email', 'Skicka aktiveringsmejlet igen')}
               </button>
             )
           )}
           <Button type="submit" loading={loading} className="mt-2">
-            Log in
+            {tr('Log in', 'Logga in')}
           </Button>
         </form>
 
         <p className="mt-6 text-center text-white/50 text-sm">
-          No account?{' '}
+          {tr('No account?', 'Inget konto?')}{' '}
           <Link href="/auth/register" className="text-brand-400 hover:text-brand-300">
-            Register
+            {tr('Register', 'Skapa ett')}
           </Link>
         </p>
       </div>

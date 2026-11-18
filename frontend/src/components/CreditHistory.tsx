@@ -7,17 +7,22 @@ import { leagueStyle } from '@/lib/leagues';
 import { formatTeamName } from '@/lib/formatTeamName';
 import { TeamLogo } from '@/components/TeamLogo';
 import type { CreditTransaction, CreditTransactionPage, CreditTransactionType } from '@/types/api';
+import { useI18n } from '@/lib/i18n-client';
+import { dateLocale, formatNumber, type Locale, type Tr } from '@/lib/i18n';
 
-const LABELS: Record<CreditTransactionType, string> = {
-  STARTING_BALANCE: 'Starting balance',
-  COUPON_PURCHASE: 'Coupon bought',
-  COUPON_PAYOUT: 'Contract fulfilled',
-  ADJUSTMENT: 'Correction',
-  REFINANCE: 'Refinancing',
-};
+function label(type: CreditTransactionType, tr: Tr): string {
+  const labels: Record<CreditTransactionType, string> = {
+    STARTING_BALANCE: tr('Starting balance', 'Startsaldo'),
+    COUPON_PURCHASE: tr('Coupon bought', 'Kupong köpt'),
+    COUPON_PAYOUT: tr('Contract fulfilled', 'Kontrakt uppfyllt'),
+    ADJUSTMENT: tr('Correction', 'Rättelse'),
+    REFINANCE: tr('Refinancing', 'Refinansiering'),
+  };
+  return labels[type];
+}
 
-function formatDate(dt: string) {
-  return new Date(dt).toLocaleDateString('sv-SE', { year: 'numeric', month: 'short', day: 'numeric' });
+function formatDate(dt: string, locale: Locale) {
+  return new Date(dt).toLocaleDateString(dateLocale(locale), { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
 /**
@@ -25,6 +30,7 @@ function formatDate(dt: string) {
  * one page (the dashboard); with `paged` it offers "Load more" (/history).
  */
 export function CreditHistory({ pageSize, paged = false }: { pageSize: number; paged?: boolean }) {
+  const { locale, tr } = useI18n();
   const [rows, setRows] = useState<CreditTransaction[] | null>(null);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -47,8 +53,8 @@ export function CreditHistory({ pageSize, paged = false }: { pageSize: number; p
     load().catch(() => setRows([]));
   }, [load]);
 
-  if (rows === null) return <p className="text-white/30 text-sm">Loading…</p>;
-  if (rows.length === 0) return <p className="text-white/30 text-sm">No credit history yet.</p>;
+  if (rows === null) return <p className="text-white/30 text-sm">{tr('Loading…', 'Laddar…')}</p>;
+  if (rows.length === 0) return <p className="text-white/30 text-sm">{tr('No credit history yet.', 'Ingen kredithistorik än.')}</p>;
 
   return (
     <>
@@ -56,18 +62,18 @@ export function CreditHistory({ pageSize, paged = false }: { pageSize: number; p
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-white/10 text-white/40 text-left">
-              <th className="px-2 sm:px-4 py-3 font-medium">Date</th>
-              <th className="px-2 sm:px-4 py-3 font-medium">What</th>
-              <th className="px-2 sm:px-4 py-3 font-medium hidden sm:table-cell">Contract</th>
-              <th className="px-2 sm:px-4 py-3 font-medium tabular text-right">Credits</th>
+              <th className="px-2 sm:px-4 py-3 font-medium">{tr('Date', 'Datum')}</th>
+              <th className="px-2 sm:px-4 py-3 font-medium">{tr('What', 'Vad')}</th>
+              <th className="px-2 sm:px-4 py-3 font-medium hidden sm:table-cell">{tr('Contract', 'Kontrakt')}</th>
+              <th className="px-2 sm:px-4 py-3 font-medium tabular text-right">{tr('Credits', 'Krediter')}</th>
             </tr>
           </thead>
           <tbody>
             {rows.map((t) => (
               <tr key={t.id} className="border-b border-white/5 last:border-0">
-                <td className="px-2 sm:px-4 py-3 tabular text-white/50 whitespace-nowrap">{formatDate(t.createdAt)}</td>
+                <td className="px-2 sm:px-4 py-3 tabular text-white/50 whitespace-nowrap">{formatDate(t.createdAt, locale)}</td>
                 <td className="px-2 sm:px-4 py-3 text-orange-100">
-                  {LABELS[t.type]}
+                  {label(t.type, tr)}
                   {t.note && <span className="block text-xs text-white/30">{t.note}</span>}
                 </td>
                 <td
@@ -94,7 +100,7 @@ export function CreditHistory({ pageSize, paged = false }: { pageSize: number; p
                   }`}
                 >
                   {t.amount >= 0 ? '+' : '−'}
-                  {Math.abs(t.amount).toLocaleString()} cr
+                  {formatNumber(locale, Math.abs(t.amount))} cr
                 </td>
               </tr>
             ))}
@@ -110,7 +116,7 @@ export function CreditHistory({ pageSize, paged = false }: { pageSize: number; p
           disabled={loadingMore}
           className="mt-4 text-sm text-brand-400 hover:text-brand-300 font-semibold transition-colors disabled:opacity-50"
         >
-          {loadingMore ? 'Loading…' : 'Load more'}
+          {loadingMore ? tr('Loading…', 'Laddar…') : tr('Load more', 'Visa fler')}
         </button>
       )}
     </>

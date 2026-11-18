@@ -17,10 +17,13 @@ import { StandingsBoard } from '@/components/StandingsBoard';
 import { ShareButton } from '@/components/ShareButton';
 import { Button } from '@/components/ui/Button';
 import type { LeaderboardBoard, LeaderboardEntry, MiniLeagueDetail } from '@/types/api';
+import { useI18n } from '@/lib/i18n-client';
+import { plural } from '@/lib/i18n';
 
 export default function MiniLeaguePage() {
   const { id } = useParams<{ id: string }>();
   const { user, loading: authLoading } = useRequireAuth();
+  const { locale, tr } = useI18n();
   const router = useRouter();
   const [league, setLeague] = useState<MiniLeagueDetail | null>(null);
   const [missing, setMissing] = useState(false);
@@ -53,14 +56,14 @@ export default function MiniLeaguePage() {
     [id],
   );
 
-  if (authLoading || !user) return <p className="text-white/50 text-center py-24">Loading…</p>;
+  if (authLoading || !user) return <p className="text-white/50 text-center py-24">{tr('Loading…', 'Laddar…')}</p>;
 
   if (missing) {
     return (
       <div className="max-w-xl mx-auto px-4 sm:px-6 py-16 text-center">
-        <h1 className="text-3xl text-brand-500 mb-4">Mini-league not found</h1>
-        <p className="text-white/50 mb-6">It may have been deleted, or you are not a member of it.</p>
-        <Link href="/mini-leagues" className="text-brand-400 hover:text-brand-300 font-bold">← Your mini-leagues</Link>
+        <h1 className="text-3xl text-brand-500 mb-4">{tr('Mini-league not found', 'Miniligan hittades inte')}</h1>
+        <p className="text-white/50 mb-6">{tr('It may have been deleted, or you are not a member of it.', 'Den kan ha raderats, eller så är du inte med i den.')}</p>
+        <Link href="/mini-leagues" className="text-brand-400 hover:text-brand-300 font-bold">{tr('← Your mini-leagues', '← Dina miniligor')}</Link>
       </div>
     );
   }
@@ -73,7 +76,7 @@ export default function MiniLeaguePage() {
     try {
       await action();
     } catch (err) {
-      setError(apiError(err));
+      setError(apiError(err, tr('Something went wrong', 'Något gick fel')));
     }
   };
 
@@ -83,13 +86,13 @@ export default function MiniLeaguePage() {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      window.prompt('Copy this link:', link);
+      window.prompt(tr('Copy this link:', 'Kopiera länken:'), link);
     }
   };
 
   const regenerate = () =>
     run(async () => {
-      if (!league || !confirm('Make a new invite link? The current one stops working straight away.')) return;
+      if (!league || !confirm(tr('Make a new invite link? The current one stops working straight away.', 'Skapa en ny inbjudningslänk? Den nuvarande slutar fungera direkt.'))) return;
       const { inviteCode } = await newInviteCode(league.id);
       setLeague({ ...league, inviteCode });
     });
@@ -107,7 +110,7 @@ export default function MiniLeaguePage() {
   const remove = (entry: LeaderboardEntry) =>
     run(async () => {
       if (!league) return;
-      if (!confirm(`Remove ${entry.displayName} from ${league.name}? To keep them out, make a new invite link too.`)) return;
+      if (!confirm(tr(`Remove ${entry.displayName} from ${league.name}? To keep them out, make a new invite link too.`, `Ta bort ${entry.displayName} från ${league.name}? Skapa också en ny inbjudningslänk för att hålla hen ute.`))) return;
       await removeMiniLeagueMember(league.id, entry.id);
       setReloadKey((k) => k + 1);
     });
@@ -117,18 +120,18 @@ export default function MiniLeaguePage() {
       if (!league) return;
       const note =
         league.memberCount === 1
-          ? 'You are the last player, so the mini-league will be deleted.'
+          ? tr('You are the last player, so the mini-league will be deleted.', 'Du är sista spelaren, så miniligan raderas.')
           : isOwner
-            ? 'The player who has been in it longest becomes the owner.'
+            ? tr('The player who has been in it longest becomes the owner.', 'Den som varit med längst blir ny ägare.')
             : '';
-      if (!confirm(`Leave ${league.name}? ${note}`.trim())) return;
+      if (!confirm(`${tr(`Leave ${league.name}?`, `Lämna ${league.name}?`)} ${note}`.trim())) return;
       await removeMiniLeagueMember(league.id, 'me');
       router.push('/mini-leagues');
     });
 
   const destroy = () =>
     run(async () => {
-      if (!league || !confirm(`Delete ${league.name} for everyone? This cannot be undone.`)) return;
+      if (!league || !confirm(tr(`Delete ${league.name} for everyone? This cannot be undone.`, `Radera ${league.name} för alla? Det går inte att ångra.`))) return;
       await deleteMiniLeague(league.id);
       router.push('/mini-leagues');
     });
@@ -136,7 +139,7 @@ export default function MiniLeaguePage() {
   return (
     <div className="max-w-2xl mx-auto px-4 sm:px-6 py-10">
       <Link href="/mini-leagues" className="text-white/30 hover:text-white/60 text-sm transition-colors mb-6 inline-block">
-        ← Mini-leagues
+        {tr('← Mini-leagues', '← Miniligor')}
       </Link>
 
       {renaming ? (
@@ -146,12 +149,12 @@ export default function MiniLeaguePage() {
             onChange={(e) => setNewName(e.target.value)}
             maxLength={40}
             autoFocus
-            aria-label="New name"
+            aria-label={tr('New name', 'Nytt namn')}
             className="flex-1 min-w-0 bg-white/5 border border-white/20 rounded-lg px-4 py-2 text-base text-orange-50 focus:outline-hidden focus:border-brand-500"
           />
-          <Button type="submit" className="px-4! py-2!">Save</Button>
+          <Button type="submit" className="px-4! py-2!">{tr('Save', 'Spara')}</Button>
           <button type="button" onClick={() => setRenaming(false)} className="text-white/50 hover:text-orange-200 text-sm">
-            Cancel
+            {tr('Cancel', 'Avbryt')}
           </button>
         </form>
       ) : (
@@ -162,7 +165,7 @@ export default function MiniLeaguePage() {
               onClick={() => { setNewName(league.name); setRenaming(true); }}
               className="text-white/40 hover:text-orange-200 text-sm mt-3 shrink-0"
             >
-              Rename
+              {tr('Rename', 'Byt namn')}
             </button>
           )}
         </div>
@@ -175,17 +178,20 @@ export default function MiniLeaguePage() {
           }`}
         >
           <h2 className="text-orange-200 text-lg mb-1">
-            {justCreated ? 'Your mini-league is ready — invite people' : 'Invite people'}
+            {justCreated ? tr('Your mini-league is ready — invite people', 'Din miniliga är klar — bjud in folk') : tr('Invite people', 'Bjud in folk')}
           </h2>
           <p className="text-white/50 text-sm mb-4">
-            Anyone with this link can join. New players create a free account first and land back here.
+            {tr(
+              'Anyone with this link can join. New players create a free account first and land back here.',
+              'Alla med länken kan gå med. Nya spelare skapar först ett gratis konto och hamnar sedan här.',
+            )}
           </p>
           <div className="flex flex-col sm:flex-row gap-2">
             <input
               readOnly
               value={link}
               onFocus={(e) => e.currentTarget.select()}
-              aria-label="Invite link"
+              aria-label={tr('Invite link', 'Inbjudningslänk')}
               className="flex-1 min-w-0 bg-black/30 border border-white/15 rounded-lg px-3 py-2 text-base sm:text-sm font-mono text-orange-100"
             />
             <div className="flex gap-2">
@@ -193,18 +199,21 @@ export default function MiniLeaguePage() {
                 onClick={copy}
                 className="flex-1 sm:flex-none bg-brand-500 hover:bg-brand-600 text-white font-bold text-sm px-4 py-2 rounded-lg transition-colors"
               >
-                {copied ? 'Copied' : 'Copy link'}
+                {copied ? tr('Copied', 'Kopierad') : tr('Copy link', 'Kopiera länk')}
               </button>
               <ShareButton
                 url={link}
-                text={`Join my mini-league “${league.name}” on Football Contracts — bid on how football teams play, free.`}
+                text={tr(
+                  `Join my mini-league “${league.name}” on Football Contracts — bid on how football teams play, free.`,
+                  `Gå med i min miniliga ”${league.name}” på Football Contracts — bjud på hur fotbollslag spelar, gratis.`,
+                )}
                 className="flex-1 sm:flex-none justify-center"
               />
             </div>
           </div>
           {isOwner && (
             <button onClick={regenerate} className="text-white/40 hover:text-orange-200 text-xs mt-3">
-              Make a new link (stops the old one working)
+              {tr('Make a new link (stops the old one working)', 'Skapa en ny länk (den gamla slutar fungera)')}
             </button>
           )}
         </section>
@@ -215,14 +224,13 @@ export default function MiniLeaguePage() {
       <StandingsBoard
         load={load}
         reloadKey={reloadKey}
-        footnote={league ? `${league.memberCount} player${league.memberCount === 1 ? '' : 's'}.` : ''}
-        emptyText="No players yet."
+        footnote={league ? `${plural(locale, league.memberCount, ['player', 'players'], ['spelare', 'spelare'])}.` : ''}
         rowAction={
           isOwner
             ? (entry) =>
                 entry.id !== user.id ? (
                   <button onClick={() => remove(entry)} className="text-white/30 hover:text-red-400 text-xs">
-                    Remove
+                    {tr('Remove', 'Ta bort')}
                   </button>
                 ) : null
             : undefined
@@ -231,9 +239,9 @@ export default function MiniLeaguePage() {
 
       {league && (
         <div className="flex flex-wrap gap-6 mt-10 pt-6 border-t border-white/10 text-sm">
-          <button onClick={leave} className="text-white/40 hover:text-orange-200">Leave mini-league</button>
+          <button onClick={leave} className="text-white/40 hover:text-orange-200">{tr('Leave mini-league', 'Lämna miniligan')}</button>
           {isOwner && (
-            <button onClick={destroy} className="text-white/40 hover:text-red-400">Delete mini-league</button>
+            <button onClick={destroy} className="text-white/40 hover:text-red-400">{tr('Delete mini-league', 'Radera miniligan')}</button>
           )}
         </div>
       )}

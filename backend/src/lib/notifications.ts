@@ -15,6 +15,7 @@ import crypto from 'crypto';
 import { League, PrismaClient } from '@prisma/client';
 import { escapeHtml, sendBatch, type OutgoingMail } from './email';
 import { COUPON_PAYOUT } from './ledger';
+import { asLocale, dateLocale, formatNumber, plural, tr, type Locale } from './i18n';
 
 export type NotificationKind = 'results' | 'payouts' | 'new' | 'all';
 export const NOTIFICATION_KINDS: NotificationKind[] = ['results', 'payouts', 'new', 'all'];
@@ -92,12 +93,20 @@ function teamName(name: string): string {
   return escapeHtml(plainTeamName(name));
 }
 
-const KIND_NAMES: Record<NotificationKind, string> = {
-  results: 'auction results',
-  payouts: 'payout',
-  new: 'new contract',
-  all: 'all',
-};
+function kindName(locale: Locale, kind: NotificationKind): string {
+  const names: Record<NotificationKind, [string, string]> = {
+    results: ['auction results', 'auktionsresultat'],
+    payouts: ['payout', 'utbetalningar'],
+    new: ['new contract', 'nya kontrakt'],
+    all: ['all', 'allt'],
+  };
+  return tr(locale, ...names[kind]);
+}
+
+const COUPON: [string, string] = ['coupon', 'coupons'];
+const KUPONG: [string, string] = ['kupong', 'kuponger'];
+const NEW_CONTRACT: [string, string] = ['new contract', 'new contracts'];
+const NYTT_KONTRAKT: [string, string] = ['nytt kontrakt', 'nya kontrakt'];
 
 type Row = { team: string; pattern: string; contractId: string; right: string };
 
@@ -117,32 +126,40 @@ function table(rows: Row[]): string {
   );
 }
 
-function layout(userId: string, kind: NotificationKind, heading: string, body: string): string {
+function layout(locale: Locale, userId: string, kind: NotificationKind, heading: string, body: string): string {
   return (
-    `<!doctype html><html><head><meta charset="utf-8"></head><body>` +
+    `<!doctype html><html lang="${locale}"><head><meta charset="utf-8"></head><body>` +
     `<div style="font-family:system-ui,-apple-system,Segoe UI,sans-serif;max-width:560px;margin:0 auto;color:#1a1a1a;line-height:1.5">` +
     `<p style="font-weight:900;font-size:18px;color:#ea580c;margin:0 0 16px">Football Contracts</p>` +
     `<h1 style="font-size:22px;margin:0 0 12px">${heading}</h1>` +
     body +
-    `<p style="margin:24px 0"><a href="${FRONTEND_URL}/dashboard" style="background:#ea580c;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:bold">Open your dashboard</a></p>` +
+    `<p style="margin:24px 0"><a href="${FRONTEND_URL}/dashboard" style="background:#ea580c;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:bold">${tr(locale, 'Open your dashboard', 'Öppna din översikt')}</a></p>` +
     `<p style="font-size:12px;color:#888;border-top:1px solid #eee;padding-top:12px;margin-top:32px">` +
-    `You get this because ${KIND_NAMES[kind]} mail is switched on for your account. ` +
-    `<a href="${FRONTEND_URL}/settings/notifications" style="color:#888">Choose what we send</a> &middot; ` +
-    `<a href="${FRONTEND_URL}/unsubscribe?${unsubscribeQuery(userId, kind)}" style="color:#888">Unsubscribe from these</a>` +
+    tr(
+      locale,
+      `You get this because ${kindName(locale, kind)} mail is switched on for your account. `,
+      `Du får det här eftersom mejl om ${kindName(locale, kind)} är påslaget för ditt konto. `,
+    ) +
+    `<a href="${FRONTEND_URL}/settings/notifications" style="color:#888">${tr(locale, 'Choose what we send', 'Välj vad vi skickar')}</a> &middot; ` +
+    `<a href="${FRONTEND_URL}/unsubscribe?${unsubscribeQuery(userId, kind)}" style="color:#888">${tr(locale, 'Unsubscribe from these', 'Avregistrera dig från de här')}</a>` +
     `</p></div></body></html>`
   );
 }
 
-function mail(user: { id: string; email: string }, kind: NotificationKind, subject: string, heading: string, body: string): OutgoingMail {
+function mail(
+  user: { id: string; email: string; locale: string },
+  kind: NotificationKind,
+  subject: string,
+  heading: string,
+  body: string,
+): OutgoingMail {
   return {
     to: user.email,
     subject,
-    html: layout(user.id, kind, heading, body),
+    html: layout(asLocale(user.locale), user.id, kind, heading, body),
     headers: unsubscribeHeaders(user.id, kind),
   };
 }
-
-const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
 // ─── Auction results ────────────────────────────────────────────────────────
 
@@ -160,35 +177,49 @@ export async function sendAuctionResults(prisma: PrismaClient, outcomes: Map<str
   if (outcomes.size === 0) return;
   const users = await prisma.user.findMany({
     where: { id: { in: [...outcomes.keys()] }, emailVerified: true, notifyAuctionResults: true },
-    select: { id: true, email: true, credits: true },
+    select: { id: true, email: true, credits: true, locale: true },
   });
 
   const mails = users.map((u) => {
+    const l = asLocale(u.locale);
     const list = outcomes.get(u.id)!;
     const won = list.filter((o) => o.won);
     const lost = list.filter((o) => !o.won);
     const spent = won.reduce((sum, o) => sum + o.bid, 0);
+    const wonCoupons = plural(l, won.length, COUPON, KUPONG);
 
     let body = '';
     if (won.length > 0) {
       body +=
-        `<p>You won ${plural(won.length, 'coupon')} for ${spent} credits${won.length > 1 ? ' in total' : ''}. ` +
-        `${won.length > 1 ? 'Each pays' : 'It pays'} ` +
-        `${COUPON_PAYOUT} credits if its team completes the pattern before the season ends.</p>` +
-        table(won.map((o) => ({ team: teamName(o.team), pattern: o.pattern, contractId: o.contractId, right: `paid <b>${o.bid} cr</b>` })));
+        tr(
+          l,
+          `<p>You won ${wonCoupons} for ${spent} credits${won.length > 1 ? ' in total' : ''}. ` +
+            `${won.length > 1 ? 'Each pays' : 'It pays'} ${COUPON_PAYOUT} credits if its team completes the pattern before the season ends.</p>`,
+          `<p>Du vann ${wonCoupons} för ${spent} krediter${won.length > 1 ? ' totalt' : ''}. ` +
+            `${won.length > 1 ? 'Varje kupong ger' : 'Den ger'} ${COUPON_PAYOUT} krediter om laget fullbordar mönstret innan säsongen är slut.</p>`,
+        ) +
+        table(won.map((o) => ({ team: teamName(o.team), pattern: o.pattern, contractId: o.contractId, right: `${tr(l, 'paid', 'betalade')} <b>${o.bid} cr</b>` })));
     }
     if (lost.length > 0) {
       body +=
-        `<p>${won.length > 0 ? 'These bids' : `Your ${lost.length === 1 ? 'bid' : 'bids'}`} did not win a coupon, and nothing was charged for them:</p>` +
-        table(lost.map((o) => ({ team: teamName(o.team), pattern: o.pattern, contractId: o.contractId, right: `bid ${o.bid} cr` })));
+        tr(
+          l,
+          `<p>${won.length > 0 ? (lost.length === 1 ? 'This bid' : 'These bids') : lost.length === 1 ? 'Your bid' : 'Your bids'} did not win a coupon, and nothing was charged for ${lost.length === 1 ? 'it' : 'them'}:</p>`,
+          `<p>${won.length > 0 ? (lost.length === 1 ? 'Det här budet' : 'De här buden') : lost.length === 1 ? 'Ditt bud' : 'Dina bud'} vann ingen kupong, och inget drogs för ${lost.length === 1 ? 'det' : 'dem'}:</p>`,
+        ) +
+        table(lost.map((o) => ({ team: teamName(o.team), pattern: o.pattern, contractId: o.contractId, right: `${tr(l, 'bid', 'bud')} ${o.bid} cr` })));
     }
-    body += `<p>Your balance is now <b>${u.credits.toLocaleString('en')} credits</b>.</p>`;
+    body += tr(
+      l,
+      `<p>Your balance is now <b>${formatNumber(l, u.credits)} credits</b>.</p>`,
+      `<p>Ditt saldo är nu <b>${formatNumber(l, u.credits)} krediter</b>.</p>`,
+    );
 
     const subject =
       won.length > 0
-        ? `You won ${plural(won.length, 'coupon')}${lost.length ? `, lost ${lost.length}` : ''}`
-        : `Auction results: no coupons this time`;
-    return mail(u, 'results', subject, 'Your auctions have settled', body);
+        ? tr(l, `You won ${wonCoupons}${lost.length ? `, lost ${lost.length}` : ''}`, `Du vann ${wonCoupons}${lost.length ? `, förlorade ${lost.length}` : ''}`)
+        : tr(l, 'Auction results: no coupons this time', 'Auktionsresultat: inga kuponger den här gången');
+    return mail(u, 'results', subject, tr(l, 'Your auctions have settled', 'Dina auktioner är avgjorda'), body);
   });
 
   await sendBatch(mails, 'results');
@@ -203,23 +234,35 @@ export async function sendPayouts(prisma: PrismaClient, payouts: Map<string, Pay
   if (payouts.size === 0) return;
   const users = await prisma.user.findMany({
     where: { id: { in: [...payouts.keys()] }, emailVerified: true, notifyPayouts: true },
-    select: { id: true, email: true, credits: true },
+    select: { id: true, email: true, credits: true, locale: true },
   });
 
   const mails = users.map((u) => {
+    const l = asLocale(u.locale);
     const list = payouts.get(u.id)!;
     const total = list.length * COUPON_PAYOUT;
     const body =
-      `<p>${list.length === 1 ? 'A contract you hold a coupon for has' : `${list.length} contracts you hold coupons for have`} ` +
-      `been fulfilled. That is <b>+${total} credits</b>.</p>` +
+      tr(
+        l,
+        `<p>${list.length === 1 ? 'A contract you hold a coupon for has' : `${list.length} contracts you hold coupons for have`} been fulfilled. That is <b>+${total} credits</b>.</p>`,
+        `<p>${list.length === 1 ? 'Ett kontrakt du har en kupong på har' : `${list.length} kontrakt du har kuponger på har`} uppfyllts. Det blir <b>+${total} krediter</b>.</p>`,
+      ) +
       table(list.map((p) => ({ team: teamName(p.team), pattern: p.pattern, contractId: p.contractId, right: `<b style="color:#16a34a">+${COUPON_PAYOUT} cr</b>` }))) +
-      `<p>Your balance is now <b>${u.credits.toLocaleString('en')} credits</b>.</p>`;
+      tr(
+        l,
+        `<p>Your balance is now <b>${formatNumber(l, u.credits)} credits</b>.</p>`,
+        `<p>Ditt saldo är nu <b>${formatNumber(l, u.credits)} krediter</b>.</p>`,
+      );
     const first = list[0];
     const subject =
       list.length === 1
-        ? `+${COUPON_PAYOUT} credits: ${plainTeamName(first.team)} ${first.pattern} came in`
-        : `+${total} credits: ${list.length} contracts came in`;
-    return mail(u, 'payouts', subject, 'Contract fulfilled', body);
+        ? tr(
+            l,
+            `+${COUPON_PAYOUT} credits: ${plainTeamName(first.team)} ${first.pattern} came in`,
+            `+${COUPON_PAYOUT} krediter: ${plainTeamName(first.team)} ${first.pattern} gick in`,
+          )
+        : tr(l, `+${total} credits: ${list.length} contracts came in`, `+${total} krediter: ${list.length} kontrakt gick in`);
+    return mail(u, 'payouts', subject, tr(l, 'Contract fulfilled', 'Kontrakt uppfyllt'), body);
   });
 
   await sendBatch(mails, 'payouts');
@@ -247,18 +290,20 @@ export async function sendNewContracts(prisma: PrismaClient, contractIds: string
     }),
     prisma.user.findMany({
       where: { emailVerified: true, notifyNewContracts: true },
-      select: { id: true, email: true, favouriteLeagues: true, favouriteTeams: { select: { teamId: true } } },
+      select: { id: true, email: true, locale: true, favouriteLeagues: true, favouriteTeams: { select: { teamId: true } } },
     }),
   ]);
   if (contracts.length === 0) return;
 
   const endsAt = contracts.find((c) => c.auction)?.auction?.endsAt;
-  const closes = endsAt
-    ? endsAt.toLocaleString('en-GB', { timeZone: 'Europe/Stockholm', weekday: 'long', hour: '2-digit', minute: '2-digit' })
-    : null;
+  const closes = (l: Locale) =>
+    endsAt
+      ? endsAt.toLocaleString(dateLocale(l), { timeZone: 'Europe/Stockholm', weekday: 'long', hour: '2-digit', minute: '2-digit' })
+      : null;
 
   const mails: OutgoingMail[] = [];
   for (const u of users) {
+    const l = asLocale(u.locale);
     const teams = new Set(u.favouriteTeams.map((f) => f.teamId));
     const leagues = new Set(u.favouriteLeagues);
     const filtered = teams.size > 0 || leagues.size > 0;
@@ -268,19 +313,31 @@ export async function sendNewContracts(prisma: PrismaClient, contractIds: string
     const byLeague = new Map<League, typeof picks>();
     for (const c of picks) byLeague.set(c.team.league, [...(byLeague.get(c.team.league) ?? []), c]);
 
-    let body =
-      `<p>${plural(picks.length, 'new contract')} ${filtered ? 'for your teams and leagues ' : ''}` +
-      `${picks.length === 1 ? 'is' : 'are'} open for bidding${closes ? ` until ${closes} (Swedish time)` : ''}.</p>`;
+    const count = plural(l, picks.length, NEW_CONTRACT, NYTT_KONTRAKT);
+    const until = closes(l);
+    let body = tr(
+      l,
+      `<p>${count} ${filtered ? 'for your teams and leagues ' : ''}${picks.length === 1 ? 'is' : 'are'} open for bidding${until ? ` until ${until} (Swedish time)` : ''}.</p>`,
+      `<p>${count} ${filtered ? 'för dina lag och ligor ' : ''}${picks.length === 1 ? 'är öppet' : 'är öppna'} för bud${until ? ` till ${until}` : ''}.</p>`,
+    );
     for (const [league, list] of byLeague) {
       body +=
         `<p style="margin:16px 0 0;font-size:13px;font-weight:bold;text-transform:uppercase;color:#888">${LEAGUE_LABELS[league]}</p>` +
         table(
           list
             .sort((a, b) => a.team.name.localeCompare(b.team.name))
-            .map((c) => ({ team: teamName(c.team.name), pattern: c.pattern, contractId: c.id, right: plural(c.couponCount, 'coupon') })),
+            .map((c) => ({ team: teamName(c.team.name), pattern: c.pattern, contractId: c.id, right: plural(l, c.couponCount, COUPON, KUPONG) })),
         );
     }
-    mails.push(mail(u, 'new', `${plural(picks.length, 'new contract')} open for bidding`, 'New contracts this week', body));
+    mails.push(
+      mail(
+        u,
+        'new',
+        tr(l, `${count} open for bidding`, `${count} ${picks.length === 1 ? 'öppet' : 'öppna'} för bud`),
+        tr(l, 'New contracts this week', 'Veckans nya kontrakt'),
+        body,
+      ),
+    );
   }
 
   await sendBatch(mails, 'new');

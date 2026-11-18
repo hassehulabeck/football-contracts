@@ -9,6 +9,8 @@ import { GOOGLE_CLIENT_ID, verifyGoogleCredential } from '../lib/googleAuth';
 const registerSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
+  // The language the site was showing; the player's emails follow it.
+  locale: localeSchema.optional(),
 });
 
 const loginSchema = z.object({
@@ -74,12 +76,13 @@ export async function authRoutes(server: FastifyInstance) {
         passwordHash,
         activationToken,
         activationTokenSentAt: new Date(),
+        locale: body.locale ?? 'en',
         credits: STARTING_CREDITS,
         creditTransactions: { create: { amount: STARTING_CREDITS, type: 'STARTING_BALANCE' } },
       },
     });
 
-    await sendActivationEmail(user.email, activationToken);
+    await sendActivationEmail(user.email, activationToken, asLocale(user.locale));
 
     return reply.status(201).send({ message: 'Check your email to activate your account' });
   });
@@ -110,7 +113,7 @@ export async function authRoutes(server: FastifyInstance) {
       data: { activationToken, activationTokenSentAt: new Date() },
     });
 
-    await sendActivationEmail(user.email, activationToken);
+    await sendActivationEmail(user.email, activationToken, asLocale(user.locale));
 
     return reply.send({ message: 'Activation email sent — check your inbox' });
   });
@@ -156,7 +159,7 @@ export async function authRoutes(server: FastifyInstance) {
       },
     });
 
-    await sendPasswordResetEmail(user.email, token);
+    await sendPasswordResetEmail(user.email, token, asLocale(user.locale));
 
     return reply.send(FORGOT_PASSWORD_REPLY);
   });

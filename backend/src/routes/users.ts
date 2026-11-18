@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { leaveAllLeagues } from '../lib/miniLeagues';
+import { localeSchema } from '../lib/i18n';
 import bcrypt from 'bcrypt';
 import { z } from 'zod';
 import { authenticate } from '../lib/guards';
@@ -226,6 +227,14 @@ export async function userRoutes(server: FastifyInstance) {
    * rows and favourites cascade with the user. Feedback keeps the message
    * but loses the link to the account.
    */
+  /** The language for the player's emails; the site calls this when they switch. */
+  server.patch('/me/locale', { preHandler: authenticate }, async (req, reply) => {
+    const { locale } = z.object({ locale: localeSchema }).strict().parse(req.body);
+    const userId = (req.user as any).sub as string;
+    await server.prisma.user.update({ where: { id: userId }, data: { locale } });
+    return reply.send({ locale });
+  });
+
   server.delete('/me', { preHandler: authenticate }, async (req, reply) => {
     const { password, confirm } = deleteAccountSchema.parse(req.body);
     const userId = (req.user as any).sub as string;

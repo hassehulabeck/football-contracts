@@ -12,6 +12,8 @@ import { CreditHistory } from '@/components/CreditHistory';
 import { fetchLeaderboard } from '@/lib/leaderboard';
 import { fetchMyMiniLeagues } from '@/lib/miniLeagues';
 import type { Contract, ContractListResponse, MiniLeagueSummary } from '@/types/api';
+import { useI18n } from '@/lib/i18n-client';
+import { dateLocale, formatNumber, type Locale, type Tr } from '@/lib/i18n';
 
 interface MyCoupon {
   id: string;
@@ -60,21 +62,34 @@ interface MeData {
   lostBids: MyBid[];
 }
 
-function timeRemaining(endsAt: string): string {
+function timeRemaining(endsAt: string, tr: Tr): string {
   const diff = new Date(endsAt).getTime() - Date.now();
-  if (diff <= 0) return 'Closing…';
+  if (diff <= 0) return tr('Closing…', 'Stänger…');
   const totalHours = Math.floor(diff / 3_600_000);
   const mins = Math.floor((diff % 3_600_000) / 60_000);
-  if (totalHours >= 24) return `${Math.floor(totalHours / 24)}d ${totalHours % 24}h`;
-  return `${totalHours}h ${mins}m`;
+  const [d, h] = [tr('d', 'd'), tr('h', 't')];
+  if (totalHours >= 24) return `${Math.floor(totalHours / 24)}${d} ${totalHours % 24}${h}`;
+  return `${totalHours}${h} ${mins}m`;
 }
 
-function formatDay(dt: string) {
-  return new Date(dt).toLocaleDateString('sv-SE', { month: 'short', day: 'numeric' });
+function formatDay(dt: string, locale: Locale) {
+  return new Date(dt).toLocaleDateString(dateLocale(locale), { month: 'short', day: 'numeric' });
+}
+
+function couponStatus(status: string, tr: Tr): string {
+  const labels: Record<string, string> = {
+    PENDING: tr('Pending', 'Väntande'),
+    ACTIVE: tr('Auction open', 'Auktion öppen'),
+    CLOSED: tr('Awaiting result', 'Väntar på resultat'),
+    FULFILLED: tr('Fulfilled', 'Uppfyllt'),
+    FAILED: tr('Failed', 'Misslyckat'),
+  };
+  return labels[status] ?? status;
 }
 
 export default function DashboardPage() {
   const { user, loading } = useRequireAuth();
+  const { locale, tr } = useI18n();
   const [me, setMe] = useState<MeData | null>(null);
   const [rank, setRank] = useState<number | null>(null);
   const [openContracts, setOpenContracts] = useState<Contract[]>([]);
@@ -100,7 +115,7 @@ export default function DashboardPage() {
   if (loading || !user) {
     return (
       <div className="flex items-center justify-center py-20">
-        <p className="text-white/50">Loading…</p>
+        <p className="text-white/50">{tr('Loading…', 'Laddar…')}</p>
       </div>
     );
   }
@@ -111,13 +126,13 @@ export default function DashboardPage() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10">
-      <h1 className="text-4xl sm:text-5xl text-brand-500 mb-2">Dashboard</h1>
+      <h1 className="text-4xl sm:text-5xl text-brand-500 mb-2">{tr('Dashboard', 'Översikt')}</h1>
       <p className="text-white/50 mb-10">{user.email}</p>
 
       <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-10">
-        <StatTile label="Credits" value={user.credits.toLocaleString()} />
-        <StatTile label="Live coupons" value={me ? String(liveCoupons.length) : '—'} />
-        <StatTile label="Rank" value={rank ? `#${rank}` : '—'} />
+        <StatTile label={tr('Credits', 'Krediter')} value={formatNumber(locale, user.credits)} />
+        <StatTile label={tr('Live coupons', 'Aktiva kuponger')} value={me ? String(liveCoupons.length) : '—'} />
+        <StatTile label={tr('Rank', 'Placering')} value={rank ? `#${rank}` : '—'} />
       </div>
 
       {miniLeagues && miniLeagues.length === 0 && (
@@ -126,18 +141,18 @@ export default function DashboardPage() {
           className="flex items-center justify-between gap-4 rounded-xl border border-brand-500/40 bg-brand-500/10 hover:bg-brand-500/15 px-4 sm:px-5 py-4 mb-10 transition-colors"
         >
           <span>
-            <span className="block text-orange-100 font-semibold">Play against your friends</span>
+            <span className="block text-orange-100 font-semibold">{tr('Play against your friends', 'Spela mot dina vänner')}</span>
             <span className="block text-white/50 text-sm">
-              Start a mini-league, send the link, and get your own table.
+              {tr('Start a mini-league, send the link, and get your own table.', 'Starta en miniliga, skicka länken och få er egen tabell.')}
             </span>
           </span>
-          <span className="text-brand-400 font-bold whitespace-nowrap">Start one →</span>
+          <span className="text-brand-400 font-bold whitespace-nowrap">{tr('Start one →', 'Starta en →')}</span>
         </Link>
       )}
 
       {miniLeagues && miniLeagues.length > 0 && (
         <section className="mb-10">
-          <h2 className="text-sm font-bold text-orange-300 uppercase tracking-widest mb-3">Your mini-leagues</h2>
+          <h2 className="text-sm font-bold text-orange-300 uppercase tracking-widest mb-3">{tr('Your mini-leagues', 'Dina miniligor')}</h2>
           <div className="flex flex-wrap gap-2">
             {miniLeagues.map((l) => (
               <Link
@@ -156,16 +171,16 @@ export default function DashboardPage() {
       {activeBids.length > 0 && (
         <section className="mb-10">
           <h2 className="text-sm font-bold text-orange-300 uppercase tracking-widest mb-3">
-            Active bids
+            {tr('Active bids', 'Aktiva bud')}
           </h2>
           <div className="rounded-xl border border-white/10 overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-white/10 text-white/40 text-left">
-                  <th className="px-2 sm:px-4 py-3 font-medium">Team</th>
-                  <th className="px-2 sm:px-4 py-3 font-medium">Pattern</th>
-                  <th className="px-2 sm:px-4 py-3 font-medium tabular">Your bid</th>
-                  <th className="px-2 sm:px-4 py-3 font-medium">Closes in</th>
+                  <th className="px-2 sm:px-4 py-3 font-medium">{tr('Team', 'Lag')}</th>
+                  <th className="px-2 sm:px-4 py-3 font-medium">{tr('Pattern', 'Mönster')}</th>
+                  <th className="px-2 sm:px-4 py-3 font-medium tabular">{tr('Your bid', 'Ditt bud')}</th>
+                  <th className="px-2 sm:px-4 py-3 font-medium">{tr('Closes in', 'Stänger om')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -188,10 +203,10 @@ export default function DashboardPage() {
                       {bid.auction.contract.pattern}
                     </td>
                     <td className="px-2 sm:px-4 py-3 tabular font-bold text-orange-200 whitespace-nowrap">
-                      {bid.amount.toLocaleString()} cr
+                      {formatNumber(locale, bid.amount)} cr
                     </td>
                     <td className="px-2 sm:px-4 py-3 tabular text-brand-400 font-semibold whitespace-nowrap">
-                      {timeRemaining(bid.auction.endsAt)}
+                      {timeRemaining(bid.auction.endsAt, tr)}
                     </td>
                   </tr>
                 ))}
@@ -204,17 +219,17 @@ export default function DashboardPage() {
       {me && me.coupons.length > 0 && (
         <section className="mb-10">
           <h2 className="text-sm font-bold text-orange-300 uppercase tracking-widest mb-3">
-            Your coupons
+            {tr('Your coupons', 'Dina kuponger')}
           </h2>
           <div className="rounded-xl border border-white/10 overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-white/10 text-white/40 text-left">
-                  <th className="px-2 sm:px-4 py-3 font-medium">Team</th>
-                  <th className="px-2 sm:px-4 py-3 font-medium">Pattern</th>
-                  <th className="px-2 sm:px-4 py-3 font-medium hidden sm:table-cell">Status</th>
-                  <th className="px-2 sm:px-4 py-3 font-medium tabular">Paid</th>
-                  <th className="px-2 sm:px-4 py-3 font-medium tabular">Payout</th>
+                  <th className="px-2 sm:px-4 py-3 font-medium">{tr('Team', 'Lag')}</th>
+                  <th className="px-2 sm:px-4 py-3 font-medium">{tr('Pattern', 'Mönster')}</th>
+                  <th className="px-2 sm:px-4 py-3 font-medium hidden sm:table-cell">{tr('Status', 'Status')}</th>
+                  <th className="px-2 sm:px-4 py-3 font-medium tabular">{tr('Paid', 'Betalt')}</th>
+                  <th className="px-2 sm:px-4 py-3 font-medium tabular">{tr('Payout', 'Utbetalning')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -236,17 +251,17 @@ export default function DashboardPage() {
                     <td className="px-2 sm:px-4 py-3 font-mono font-bold text-brand-400">
                       {coupon.contract.pattern}
                     </td>
-                    <td className="px-2 sm:px-4 py-3 text-white/50 capitalize hidden sm:table-cell">
-                      {coupon.contract.status.toLowerCase()}
+                    <td className="px-2 sm:px-4 py-3 text-white/50 hidden sm:table-cell">
+                      {couponStatus(coupon.contract.status, tr)}
                     </td>
                     <td className="px-2 sm:px-4 py-3 tabular text-orange-100 whitespace-nowrap">
-                      {coupon.pricePaid != null ? `${coupon.pricePaid.toLocaleString()} cr` : '—'}
+                      {coupon.pricePaid != null ? `${formatNumber(locale, coupon.pricePaid)} cr` : '—'}
                     </td>
                     <td className="px-2 sm:px-4 py-3 tabular">
                       {coupon.paidOut ? (
                         <span className="text-green-400 font-semibold">+100 cr</span>
                       ) : (
-                        <span className="text-white/30">pending</span>
+                        <span className="text-white/30">{tr('pending', 'väntar')}</span>
                       )}
                     </td>
                   </tr>
@@ -260,16 +275,16 @@ export default function DashboardPage() {
       {lostBids.length > 0 && (
         <section className="mb-10">
           <h2 className="text-sm font-bold text-orange-300 uppercase tracking-widest mb-3">
-            Lost contracts
+            {tr('Lost contracts', 'Förlorade kontrakt')}
           </h2>
           <div className="rounded-xl border border-white/10 overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-white/10 text-white/40 text-left">
-                  <th className="px-2 sm:px-4 py-3 font-medium">Team</th>
-                  <th className="px-2 sm:px-4 py-3 font-medium">Pattern</th>
-                  <th className="px-2 sm:px-4 py-3 font-medium tabular">Your bid</th>
-                  <th className="px-2 sm:px-4 py-3 font-medium">Closed</th>
+                  <th className="px-2 sm:px-4 py-3 font-medium">{tr('Team', 'Lag')}</th>
+                  <th className="px-2 sm:px-4 py-3 font-medium">{tr('Pattern', 'Mönster')}</th>
+                  <th className="px-2 sm:px-4 py-3 font-medium tabular">{tr('Your bid', 'Ditt bud')}</th>
+                  <th className="px-2 sm:px-4 py-3 font-medium">{tr('Closed', 'Stängde')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -298,10 +313,10 @@ export default function DashboardPage() {
                       {bid.auction.contract.pattern}
                     </td>
                     <td className="px-2 sm:px-4 py-3 tabular text-white/40 whitespace-nowrap">
-                      {bid.amount.toLocaleString()} cr
+                      {formatNumber(locale, bid.amount)} cr
                     </td>
                     <td className="px-2 sm:px-4 py-3 tabular text-white/30 whitespace-nowrap">
-                      {formatDay(bid.auction.endsAt)}
+                      {formatDay(bid.auction.endsAt, locale)}
                     </td>
                   </tr>
                 ))}
@@ -309,22 +324,25 @@ export default function DashboardPage() {
             </table>
           </div>
           <p className="text-white/25 text-xs mt-2">
-            These auctions settled without your bid winning a coupon. No credits were taken.
+            {tr(
+              'These auctions settled without your bid winning a coupon. No credits were taken.',
+              'De här auktionerna avgjordes utan att ditt bud vann en kupong. Inga krediter drogs.',
+            )}
           </p>
         </section>
       )}
 
       {me && me.coupons.length === 0 && activeBids.length === 0 && lostBids.length === 0 && (
         <p className="text-white/30 text-sm mb-8">
-          No bids or coupons yet — browse open contracts to get started.
+          {tr('No bids or coupons yet — browse open contracts to get started.', 'Inga bud eller kuponger än — kolla de öppna kontrakten för att komma igång.')}
         </p>
       )}
 
       <section className="mb-10">
         <div className="flex items-baseline justify-between mb-3">
-          <h2 className="text-sm font-bold text-orange-300 uppercase tracking-widest">Credit history</h2>
+          <h2 className="text-sm font-bold text-orange-300 uppercase tracking-widest">{tr('Credit history', 'Kredithistorik')}</h2>
           <Link href="/history" className="text-xs text-brand-400 hover:text-brand-300 transition-colors">
-            See all →
+            {tr('See all →', 'Se alla →')}
           </Link>
         </div>
         <CreditHistory pageSize={8} />
@@ -334,19 +352,19 @@ export default function DashboardPage() {
         <section className="mb-8">
           <div className="flex items-baseline justify-between mb-3">
             <h2 className="text-sm font-bold text-orange-300 uppercase tracking-widest">
-              Open contracts
+              {tr('Open contracts', 'Öppna kontrakt')}
             </h2>
             <Link href="/contracts" className="text-xs text-brand-400 hover:text-brand-300 transition-colors">
-              See all →
+              {tr('See all →', 'Se alla →')}
             </Link>
           </div>
           <div className="rounded-xl border border-white/10 overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-white/10 text-white/40 text-left">
-                  <th className="px-2 sm:px-4 py-3 font-medium">Team</th>
-                  <th className="px-2 sm:px-4 py-3 font-medium">Pattern</th>
-                  <th className="px-2 sm:px-4 py-3 font-medium">Closes in</th>
+                  <th className="px-2 sm:px-4 py-3 font-medium">{tr('Team', 'Lag')}</th>
+                  <th className="px-2 sm:px-4 py-3 font-medium">{tr('Pattern', 'Mönster')}</th>
+                  <th className="px-2 sm:px-4 py-3 font-medium">{tr('Closes in', 'Stänger om')}</th>
                   <th className="px-2 sm:px-4 py-3 hidden sm:table-cell" />
                 </tr>
               </thead>
@@ -366,14 +384,14 @@ export default function DashboardPage() {
                     </td>
                     <td className="px-2 sm:px-4 py-3 font-mono font-bold text-brand-400">{c.pattern}</td>
                     <td className="px-2 sm:px-4 py-3 tabular text-brand-400 font-semibold whitespace-nowrap">
-                      {c.auction ? timeRemaining(c.auction.endsAt) : '—'}
+                      {c.auction ? timeRemaining(c.auction.endsAt, tr) : '—'}
                     </td>
                     <td className="px-2 sm:px-4 py-3 text-right whitespace-nowrap hidden sm:table-cell">
                       <Link
                         href={`/contracts/${c.id}`}
                         className="text-brand-400 hover:text-brand-300 font-bold text-xs uppercase tracking-wide transition-colors"
                       >
-                        Bid →
+                        {tr('Bid →', 'Bjud →')}
                       </Link>
                     </td>
                   </tr>

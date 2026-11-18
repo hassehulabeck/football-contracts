@@ -136,6 +136,10 @@ model User {
   // Narrows the new-contracts mail. With no favourite leagues or teams at all,
   // an opted-in player hears about every new contract.
   favouriteLeagues     League[] @default([])
+  // "en" or "sv": the language the player's emails are written in. Set at
+  // registration from the language the site was showing, and whenever they
+  // switch language while logged in.
+  locale               String   @default("en")
 
   bids               Bid[]
   coupons            Coupon[]
