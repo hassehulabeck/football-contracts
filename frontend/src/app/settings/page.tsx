@@ -30,6 +30,7 @@ function Row({ href, title, detail }: { href: string; title: string; detail: str
  */
 function DeleteAccount() {
   const { user, logout } = useAuth();
+  const { tr } = useI18n();
   const needsPassword = user?.hasPassword ?? true;
   const [open, setOpen] = useState(false);
   const [password, setPassword] = useState('');
@@ -71,7 +72,8 @@ function DeleteAccount() {
       </p>
       {needsPassword ? (
         <Input
-          label="Your password"
+          id="delete-password"
+          label={tr('Your password', 'Ditt lösenord')}
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
@@ -80,7 +82,8 @@ function DeleteAccount() {
         />
       ) : (
         <Input
-          label="Type DELETE to confirm"
+          id="type-delete-to-confirm"
+          label={tr('Type DELETE to confirm', 'Skriv DELETE för att bekräfta')}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
@@ -100,7 +103,7 @@ function DeleteAccount() {
       {error && <p className="text-red-400 text-sm">{error}</p>}
       <div className="flex gap-3">
         <Button type="submit" loading={busy} disabled={!understood || (needsPassword ? !password : password !== 'DELETE')} className="bg-red-600! hover:bg-red-700!">
-          Delete account
+          {tr('Delete account', 'Radera kontot')}
         </Button>
         <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
           {tr('Cancel', 'Avbryt')}
