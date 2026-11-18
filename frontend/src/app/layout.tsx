@@ -4,11 +4,23 @@ import { AuthProvider } from '@/lib/auth';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { UsernameGate } from '@/components/UsernameGate';
+import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from '@/lib/site';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Football Contracts',
-  description: 'Bid on football team performance contracts',
+  metadataBase: new URL(SITE_URL),
+  title: { default: `${SITE_NAME} — bid on how your team plays`, template: `%s — ${SITE_NAME}` },
+  description: SITE_DESCRIPTION,
+  applicationName: SITE_NAME,
+  openGraph: {
+    type: 'website',
+    siteName: SITE_NAME,
+    title: `${SITE_NAME} — bid on how your team plays`,
+    description: SITE_DESCRIPTION,
+    url: '/',
+    locale: 'en_GB',
+  },
+  twitter: { card: 'summary_large_image' },
 };
 
 // Self-hosted at build time by next/font; globals.css maps these variables onto
