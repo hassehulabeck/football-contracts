@@ -1,4 +1,5 @@
 import { FastifyInstance } from 'fastify';
+import { leaveAllLeagues } from '../lib/miniLeagues';
 import bcrypt from 'bcrypt';
 import { z } from 'zod';
 import { authenticate } from '../lib/guards';
@@ -226,12 +227,15 @@ export async function userRoutes(server: FastifyInstance) {
       return reply.status(403).send({ error: 'Wrong password' });
     }
 
-    await server.prisma.$transaction([
-      server.prisma.bid.deleteMany({ where: { userId } }),
-      server.prisma.coupon.updateMany({ where: { ownerId: userId }, data: { ownerId: null } }),
-      server.prisma.feedback.updateMany({ where: { userId }, data: { userId: null, replyTo: null } }),
-      server.prisma.user.delete({ where: { id: userId } }),
-    ]);
+    await server.prisma.$transaction(async (tx) => {
+      // First, so a league this player owns passes to another member instead
+      // of being left ownerless, and one they were alone in goes away.
+      await leaveAllLeagues(tx, userId);
+      await tx.bid.deleteMany({ where: { userId } });
+      await tx.coupon.updateMany({ where: { ownerId: userId }, data: { ownerId: null } });
+      await tx.feedback.updateMany({ where: { userId }, data: { userId: null, replyTo: null } });
+      await tx.user.delete({ where: { id: userId } });
+    });
 
     return reply.send({ message: 'Account deleted' });
   });

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import { takePendingInvite } from '@/lib/miniLeagues';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 
@@ -27,7 +28,9 @@ export default function LoginPage() {
     try {
       const res = await api.post('/api/auth/login', { email, password });
       login(res.data.token, res.data.user);
-      router.push('/dashboard');
+      // Came here from an invite link: finish joining before anything else.
+      const invite = takePendingInvite();
+      router.push(invite ? `/join/${invite}` : '/dashboard');
     } catch (err: any) {
       if (err.response?.data?.error === 'EMAIL_NOT_VERIFIED') {
         setUnverified(true);
