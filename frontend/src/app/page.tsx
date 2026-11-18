@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { LEAGUES } from '@/lib/leagues';
 import { patternLabel } from '@/lib/patterns';
+import { fetchPayouts } from '@/lib/payouts';
+import { PayoutList } from '@/components/PayoutList';
 
 const HOW_IT_WORKS = [
   {
@@ -23,7 +25,15 @@ const HOW_IT_WORKS = [
 // A sample only — a contract can carry any of the 27 three-result patterns.
 const EXAMPLE_PATTERNS = ['WWW', 'DDL', 'LWL', 'WDW', 'LLD'];
 
-export default function Home() {
+// The payouts strip is fetched on the server; cached for five minutes.
+export const revalidate = 300;
+
+export default async function Home() {
+  // Only contracts where coupons were actually bought: "no coupons sold"
+  // proves nothing to a newcomer. Fetch extra to still fill four rows.
+  const data = await fetchPayouts(12);
+  const recent = data ? { ...data, payouts: data.payouts.filter((p) => p.pricePaid).slice(0, 4) } : null;
+
   return (
     <main>
       {/* Hero */}
@@ -58,6 +68,22 @@ export default function Home() {
           </Link>
         </div>
       </section>
+
+      {/* Proof that it pays: real contracts, what they cost, what they paid. */}
+      {recent && recent.payouts.length > 0 && (
+        <section className="border-t border-white/10 px-4 sm:px-6 py-16 max-w-2xl mx-auto">
+          <h2 className="text-3xl text-orange-200 mb-2 text-center">Recently paid out</h2>
+          <p className="text-white/40 text-sm text-center mb-8">
+            Real contracts that came true. Each coupon paid 100 credits.
+          </p>
+          <PayoutList payouts={recent.payouts} />
+          <p className="text-center mt-6">
+            <Link href="/results" className="text-brand-400 hover:text-brand-300 font-bold text-sm transition-colors">
+              All results →
+            </Link>
+          </p>
+        </section>
+      )}
 
       {/* How it works */}
       <section className="border-t border-white/10 px-4 sm:px-6 py-16 max-w-4xl mx-auto">

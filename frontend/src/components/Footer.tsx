@@ -6,6 +6,9 @@ export function Footer() {
       <div className="max-w-4xl mx-auto flex flex-wrap items-center justify-between gap-4 text-sm text-white/40">
         <span>Football Contracts — a free prediction game. No real money involved.</span>
         <nav className="flex flex-wrap gap-x-5 gap-y-2">
+          <Link href="/results" className="hover:text-orange-200 transition-colors">
+            Results
+          </Link>
           <Link href="/rules" className="hover:text-orange-200 transition-colors">
             Rules
           </Link>

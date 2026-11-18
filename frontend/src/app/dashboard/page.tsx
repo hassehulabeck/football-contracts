@@ -10,7 +10,8 @@ import { TeamLogo } from '@/components/TeamLogo';
 import { StatTile } from '@/components/ui/StatTile';
 import { CreditHistory } from '@/components/CreditHistory';
 import { fetchLeaderboard } from '@/lib/leaderboard';
-import type { Contract, ContractListResponse } from '@/types/api';
+import { fetchMyMiniLeagues } from '@/lib/miniLeagues';
+import type { Contract, ContractListResponse, MiniLeagueSummary } from '@/types/api';
 
 interface MyCoupon {
   id: string;
@@ -77,6 +78,7 @@ export default function DashboardPage() {
   const [me, setMe] = useState<MeData | null>(null);
   const [rank, setRank] = useState<number | null>(null);
   const [openContracts, setOpenContracts] = useState<Contract[]>([]);
+  const [miniLeagues, setMiniLeagues] = useState<MiniLeagueSummary[] | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -90,6 +92,9 @@ export default function DashboardPage() {
         params: { status: 'open', pageSize: 5 },
       })
       .then((r) => setOpenContracts(r.data.contracts));
+    // Null on failure leaves the section out rather than nagging a player who
+    // may well be in leagues already.
+    fetchMyMiniLeagues().then(setMiniLeagues).catch(() => setMiniLeagues(null));
   }, [user]);
 
   if (loading || !user) {
@@ -114,6 +119,39 @@ export default function DashboardPage() {
         <StatTile label="Live coupons" value={me ? String(liveCoupons.length) : '—'} />
         <StatTile label="Rank" value={rank ? `#${rank}` : '—'} />
       </div>
+
+      {miniLeagues && miniLeagues.length === 0 && (
+        <Link
+          href="/mini-leagues"
+          className="flex items-center justify-between gap-4 rounded-xl border border-brand-500/40 bg-brand-500/10 hover:bg-brand-500/15 px-4 sm:px-5 py-4 mb-10 transition-colors"
+        >
+          <span>
+            <span className="block text-orange-100 font-semibold">Play against your friends</span>
+            <span className="block text-white/50 text-sm">
+              Start a mini-league, send the link, and get your own table.
+            </span>
+          </span>
+          <span className="text-brand-400 font-bold whitespace-nowrap">Start one →</span>
+        </Link>
+      )}
+
+      {miniLeagues && miniLeagues.length > 0 && (
+        <section className="mb-10">
+          <h2 className="text-sm font-bold text-orange-300 uppercase tracking-widest mb-3">Your mini-leagues</h2>
+          <div className="flex flex-wrap gap-2">
+            {miniLeagues.map((l) => (
+              <Link
+                key={l.id}
+                href={`/mini-leagues/${l.id}`}
+                className="bg-white/5 hover:bg-white/8 border border-white/10 rounded-lg px-3 py-2 text-sm transition-colors"
+              >
+                <span className="text-orange-100 font-semibold">{l.name}</span>
+                <span className="text-white/40 ml-2 tabular">{l.memberCount}</span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       {activeBids.length > 0 && (
         <section className="mb-10">

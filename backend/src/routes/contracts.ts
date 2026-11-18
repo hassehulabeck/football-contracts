@@ -27,6 +27,10 @@ const RESOLVED: ContractStatus[] = ['FULFILLED', 'FAILED'];
 
 const MAX_PAGE_SIZE = 100;
 
+const payoutsQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(50).catch(12).default(12),
+});
+
 const listQuerySchema = z.object({
   status: z.enum(['open', 'awaiting', 'fulfilled', 'failed', 'all']).optional(),
   league: z.nativeEnum(League).optional(),
@@ -113,6 +117,62 @@ export async function contractRoutes(server: FastifyInstance) {
     ]);
 
     return reply.send({ open, awaiting, fulfilled, failed });
+  });
+
+  /**
+   * Recently fulfilled contracts with what their coupons cost, for the public
+   * results page and the landing page: "coupons went for 8–22, paid 100".
+   *
+   * Prices come from the ledger, not from bids: a COUPON_PURCHASE row is what
+   * a winner was actually charged at settlement, so one grouped query covers
+   * every contract on the page.
+   */
+  server.get('/payouts', async (req, reply) => {
+    const { limit } = payoutsQuerySchema.parse(req.query);
+
+    const [contracts, fulfilledCount, paidSum] = await server.prisma.$transaction([
+      server.prisma.contract.findMany({
+        where: { status: 'FULFILLED' },
+        orderBy: { resolvedAt: 'desc' },
+        take: limit,
+        select: {
+          id: true,
+          pattern: true,
+          resolvedAt: true,
+          team: { select: { name: true, league: true, externalId: true } },
+          _count: { select: { coupons: { where: { paidOut: true } } } },
+        },
+      }),
+      server.prisma.contract.count({ where: { status: 'FULFILLED' } }),
+      server.prisma.creditTransaction.aggregate({
+        where: { type: 'COUPON_PAYOUT' },
+        _sum: { amount: true },
+      }),
+    ]);
+
+    // Purchases are negative ledger rows, so the cheapest coupon is the max.
+    const prices = await server.prisma.creditTransaction.groupBy({
+      by: ['contractId'],
+      where: { type: 'COUPON_PURCHASE', contractId: { in: contracts.map((c) => c.id) } },
+      _min: { amount: true },
+      _max: { amount: true },
+      orderBy: { contractId: 'asc' },
+    });
+    const range = new Map(
+      prices.map((p) => [p.contractId, { min: -(p._max.amount ?? 0), max: -(p._min.amount ?? 0) }]),
+    );
+
+    return reply.send({
+      totals: { fulfilled: fulfilledCount, creditsPaidOut: paidSum._sum.amount ?? 0 },
+      payouts: contracts.map((c) => ({
+        id: c.id,
+        pattern: c.pattern,
+        resolvedAt: c.resolvedAt,
+        team: c.team,
+        couponsPaid: c._count.coupons,
+        pricePaid: range.get(c.id) ?? null,
+      })),
+    });
   });
 
   server.get('/:id', async (req, reply) => {

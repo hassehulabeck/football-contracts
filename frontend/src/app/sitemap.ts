@@ -7,6 +7,7 @@ export const revalidate = 3600;
 const STATIC_PAGES: { path: string; changeFrequency: 'daily' | 'weekly' | 'monthly'; priority: number }[] = [
   { path: '/', changeFrequency: 'weekly', priority: 1 },
   { path: '/contracts', changeFrequency: 'daily', priority: 0.9 },
+  { path: '/results', changeFrequency: 'daily', priority: 0.8 },
   { path: '/leaderboard', changeFrequency: 'daily', priority: 0.7 },
   { path: '/rules', changeFrequency: 'monthly', priority: 0.6 },
   { path: '/privacy', changeFrequency: 'monthly', priority: 0.2 },

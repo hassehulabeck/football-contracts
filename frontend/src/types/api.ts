@@ -269,3 +269,20 @@ export interface MiniLeagueInvite {
   ownerName: string | null;
   memberCount: number;
 }
+
+// ─── Payouts ─────────────────────────────────────────────────────────────────
+
+export interface Payout {
+  id: string;
+  pattern: ContractPattern;
+  resolvedAt: string | null;
+  team: { name: string; league: League; externalId: number };
+  couponsPaid: number;
+  /** What winners were charged for a coupon. Null if none were sold. */
+  pricePaid: { min: number; max: number } | null;
+}
+
+export interface PayoutsResponse {
+  totals: { fulfilled: number; creditsPaidOut: number };
+  payouts: Payout[];
+}
