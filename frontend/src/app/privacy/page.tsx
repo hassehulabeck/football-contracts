@@ -2,7 +2,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Privacy — Football Contracts',
+  title: 'Privacy',
   description: 'What Football Contracts stores about you, why, who handles it, and how to have it deleted.',
 };
 
