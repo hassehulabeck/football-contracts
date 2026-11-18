@@ -79,11 +79,10 @@ function PrivacyEn() {
           </li>
         </ul>
         <p>
-          We use no analytics or advertising trackers. There is one cookie,{' '}
-          <code className="text-orange-100">fc_lang</code>, set only when you choose a language,
-          so the site remembers it. Your browser keeps the token that keeps you logged in in local
-          storage, removed when you log out, and — only while you are joining a mini-league from
-          an invite link — that link's code, removed once you log in. Our servers keep short-lived technical logs (such as IP addresses of requests)
+          We do not use cookies, analytics or advertising trackers. Your browser keeps the token
+          that keeps you logged in in local storage, removed when you log out, and — only while
+          you are joining a mini-league from an invite link — that link's code, removed once you
+          log in. Our servers keep short-lived technical logs (such as IP addresses of requests)
           for running the site and stopping abuse.
         </p>
       </Section>

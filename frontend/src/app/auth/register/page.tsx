@@ -6,7 +6,6 @@ import { api } from '@/lib/api';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { GoogleSignIn } from '@/components/GoogleSignIn';
-import { useI18n } from '@/lib/i18n-client';
 
 export default function RegisterPage() {
   const { locale, tr } = useI18n();
@@ -72,6 +71,8 @@ export default function RegisterPage() {
       <div className="w-full max-w-sm">
         <h1 className="text-4xl text-brand-500 mb-2">{tr('Create account', 'Skapa konto')}</h1>
         <p className="text-white/50 mb-8">{tr('You start with 1\u00a0000 credits.', 'Du börjar med 1\u00a0000 krediter.')}</p>
+
+        <GoogleSignIn />
 
         <GoogleSignIn />
 

@@ -9,7 +9,6 @@ import { takePendingInvite } from '@/lib/miniLeagues';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { GoogleSignIn } from '@/components/GoogleSignIn';
-import { useI18n } from '@/lib/i18n-client';
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -62,6 +61,8 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         <h1 className="text-4xl text-brand-500 mb-2">{tr('Log in', 'Logga in')}</h1>
         <p className="text-white/50 mb-8">{tr('Good to have you back.', 'Kul att se dig igen.')}</p>
+
+        <GoogleSignIn />
 
         <GoogleSignIn />
 
