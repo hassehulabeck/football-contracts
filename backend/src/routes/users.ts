@@ -15,7 +15,13 @@ const usernameSchema = z.object({
 
 const RENAME_COOLDOWN_MS = 30 * 24 * 60 * 60 * 1000;
 
-const deleteAccountSchema = z.object({ password: z.string().min(1) });
+// A password for a normal account. An account made through Google sign-in has
+// none the player knows, so it confirms by typing DELETE instead — it is
+// already authenticated by the token, and this guards against a slip.
+const deleteAccountSchema = z.object({
+  password: z.string().min(1).optional(),
+  confirm: z.literal('DELETE').optional(),
+});
 
 const transactionsQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(25),
@@ -40,6 +46,8 @@ export async function userRoutes(server: FastifyInstance) {
         // Shows the Admin link. The server re-checks on every admin request;
         // this only decides what the navbar renders.
         isAdmin: true,
+        // Decides whether account deletion asks for a password or for DELETE.
+        passwordSet: true,
         createdAt: true,
         coupons: {
           include: {
@@ -101,7 +109,8 @@ export async function userRoutes(server: FastifyInstance) {
     const pricePaid = new Map(user.bids.map((b) => [b.auction.contract.id, b.amount]));
     const coupons = user.coupons.map((c) => ({ ...c, pricePaid: pricePaid.get(c.contractId) ?? null }));
 
-    return reply.send({ ...user, coupons, bids, lostBids });
+    const { passwordSet, ...rest } = user;
+    return reply.send({ ...rest, hasPassword: passwordSet, coupons, bids, lostBids });
   });
 
   /**
@@ -218,13 +227,20 @@ export async function userRoutes(server: FastifyInstance) {
    * but loses the link to the account.
    */
   server.delete('/me', { preHandler: authenticate }, async (req, reply) => {
-    const { password } = deleteAccountSchema.parse(req.body);
+    const { password, confirm } = deleteAccountSchema.parse(req.body);
     const userId = (req.user as any).sub as string;
 
-    const user = await server.prisma.user.findUnique({ where: { id: userId }, select: { passwordHash: true } });
+    const user = await server.prisma.user.findUnique({
+      where: { id: userId },
+      select: { passwordHash: true, passwordSet: true },
+    });
     if (!user) return reply.status(404).send({ error: 'Not found' });
-    if (!(await bcrypt.compare(password, user.passwordHash))) {
-      return reply.status(403).send({ error: 'Wrong password' });
+    if (user.passwordSet) {
+      if (!password || !(await bcrypt.compare(password, user.passwordHash))) {
+        return reply.status(403).send({ error: 'Wrong password' });
+      }
+    } else if (confirm !== 'DELETE') {
+      return reply.status(400).send({ error: 'Type DELETE to confirm' });
     }
 
     await server.prisma.$transaction(async (tx) => {

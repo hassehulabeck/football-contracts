@@ -48,6 +48,11 @@ export default function PrivacyPage() {
             hash. Nobody, including us, can read it back.
           </li>
           <li>
+            <strong className="text-orange-100">If you sign in with Google</strong>: your Google
+            account id and the email address Google confirms for you. We do not receive your
+            Google password, contacts or anything else from your Google account.
+          </li>
+          <li>
             <strong className="text-orange-100">Your username</strong>, which is public on the
             leaderboard. Your email never is.
           </li>
@@ -61,9 +66,10 @@ export default function PrivacyPage() {
           </li>
         </ul>
         <p>
-          We do not use cookies, analytics or advertising trackers. Your browser keeps one item
-          in local storage — the token that keeps you logged in — and it is removed when you log
-          out. Our servers keep short-lived technical logs (such as IP addresses of requests)
+          We do not use cookies, analytics or advertising trackers. Your browser keeps the token
+          that keeps you logged in in local storage, removed when you log out, and — only while
+          you are joining a mini-league from an invite link — that link's code, removed once you
+          log in. Our servers keep short-lived technical logs (such as IP addresses of requests)
           for running the site and stopping abuse.
         </p>
       </Section>
@@ -87,6 +93,11 @@ export default function PrivacyPage() {
             <strong className="text-orange-100">Resend</strong> delivers our emails, so it
             handles your email address and the content of the mails we send you. Resend is based
             in the United States.
+          </li>
+          <li>
+            <strong className="text-orange-100">Google</strong>, only if you choose “Continue with
+            Google”: Google confirms who you are and tells us your email address. The sign-in
+            button is loaded from Google’s servers on the login and registration pages only.
           </li>
           <li>
             <strong className="text-orange-100">API-Football</strong> supplies match results and
