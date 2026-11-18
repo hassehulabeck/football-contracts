@@ -6,7 +6,7 @@ import { patternDescription, patternLabel } from '@/lib/patterns';
 import { BatchSettingsTable, CouponRuleText } from '@/components/BatchSettings';
 
 export const metadata: Metadata = {
-  title: 'Rules — Football Contracts',
+  title: 'Rules',
   description:
     'How Football Contracts works: contracts, silent auctions, coupons, fulfilment and payouts.',
 };

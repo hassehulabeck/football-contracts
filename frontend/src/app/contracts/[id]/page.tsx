@@ -7,6 +7,7 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { formatTeamName } from '@/lib/formatTeamName';
 import { LeagueBadge } from '@/components/LeagueBadge';
+import { ShareButton } from '@/components/ShareButton';
 import { MatchRow } from '@/components/MatchRow';
 import { PatternProgress } from '@/components/PatternProgress';
 import { TeamLogo } from '@/components/TeamLogo';
@@ -132,8 +133,9 @@ export default function ContractDetailPage() {
         ← Contracts
       </Link>
 
-      <div className="mb-3">
+      <div className="mb-3 flex items-center justify-between gap-3">
         <LeagueBadge league={contract.team.league} />
+        <ShareButton text={shareText(contract)} />
       </div>
       <h1 className="text-3xl sm:text-4xl font-black text-brand-500 mb-1 flex items-center gap-3">
         <TeamLogo externalId={contract.team.externalId} className="w-8 h-8 shrink-0" />
@@ -360,6 +362,21 @@ export default function ContractDetailPage() {
       )}
     </div>
   );
+}
+
+/** The message that goes with a shared link; the preview image does the rest. */
+function shareText(contract: ContractDetail): string {
+  const team = formatTeamName(contract.team.name);
+  switch (contract.status) {
+    case 'ACTIVE':
+      return `${team} ${contract.pattern} is up for auction on Football Contracts. Will they do it?`;
+    case 'FULFILLED':
+      return `${team} did it: ${contract.pattern}, and every coupon holder got 100 credits.`;
+    case 'FAILED':
+      return `${team} never managed ${contract.pattern} this season.`;
+    default:
+      return `${team} ${contract.pattern} on Football Contracts. Will they do it?`;
+  }
 }
 
 function InfoCard({ label, value }: { label: string; value: string }) {
