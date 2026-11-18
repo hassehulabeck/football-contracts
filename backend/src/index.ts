@@ -31,6 +31,10 @@ async function start() {
   await server.register(cors, {
     origin: corsOrigins,
     credentials: true,
+    // Spelled out because @fastify/cors 10 narrowed the default to GET, HEAD
+    // and POST, which silently blocks every PATCH/PUT/DELETE from the browser
+    // (username, notification settings, account deletion, admin edits).
+    methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE'],
   });
 
   await server.register(jwt, {
